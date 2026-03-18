@@ -283,8 +283,12 @@ def generate_bash_script(config_file, script_outdir):
             if not col_group_check or col_group_check.lower() == "none" or col_group_check == "NA":
                 dyn_args += " --no_group"
             
-            cmd += f"{python_path} {script_dir}/generate_dynamic_report.py {dyn_args}\n"
-            cmd += f"cd {celltype_out} && {jupyter_path} nbconvert --no-input --template pj --to html report_custom.ipynb && mv report_custom.html CellType.Annotation_report.html\n\n"
+            do_report = celltype_conf.get("do_report", True)
+            if do_report:
+                cmd += f"{python_path} {script_dir}/generate_dynamic_report.py {dyn_args}\n"
+                cmd += f"cd {celltype_out} && {jupyter_path} nbconvert --no-input --template pj --to html report_custom.ipynb && mv report_custom.html CellType.Annotation_report.html\n\n"
+            else:
+                cmd += "# do_report 为 false，跳过动态图文 HTML 分析报告渲染阶段\n\n"
                  
             script_content += cmd
             # 记录最终挂载位置供入库

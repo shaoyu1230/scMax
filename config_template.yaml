@@ -130,6 +130,7 @@ global_outdir: "/Users/angela/Documents/00_annoroad/06_Development/scMax/test_ou
   do_annotation: true       # 仅添加注释
   do_celltype: true         # 运行 celltype UMAP 和比例图
   do_celltype_de: false     # 运行细胞类型差异与富集（可选）
+  do_report: true           # 生成 HTML 动态交互可视化报告（可选，如为 false 则跳过渲染）
   annotated_rds: ""         # 直接读取已有注释 rds（可选，用于跳过 do_annotation）
   
   # ------ 富集物种配置 ------
