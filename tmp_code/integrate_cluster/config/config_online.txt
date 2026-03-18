@@ -1,0 +1,3 @@
+Rscript=/data/hiplot/share/SCV/Software/envs/pipeline1/bin/Rscript
+python=/data/hiplot/share/SCV/Software/envs/pipeline1/bin/python
+CONVERT=/data/hiplot/share/SCV/Software/envs/pipeline1/bin/convert

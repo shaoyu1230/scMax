@@ -1,0 +1,35 @@
+质控分析结果文件说明：
+
+1_Batch 
+合并样本数据，直接降维聚类分群，用于检查是否存在批次效应。
+├── 1_PCA.p*						样本PCA分布图。
+├── 2_TSNE/UMAP-seurat_clusters.p*	分群UMAP/TSNE图。
+├── 3_TSNE-Sample.p*				样本/分组的UMAP/TSNE图。
+└── 3_UMAP-Sample.split.p*			分群UMAP/TSNE图，分别绘制各个样本/分组。
+
+2_QC	
+基础质控：用于判断样本质量，确定过滤阈值。
+包括如下四个指标：
+nFeature_RNA	细胞中基因数量
+nCount_RNA		细胞中UMI数量
+percent.mt		细胞中线粒体基因占比，没有线粒体注释信息的物种则线粒体基因占比为0。
+percent.hb		细胞中红细胞基因占比，没有红细胞注释信息的物种则红细胞基因占比为0。
+结果文件：
+├── 1_QC-vln.p*					样本基础质控指标小提琴图。
+└── 2_QC-UMAP/TSNE.p*			基础质控指标在UMAP/TSNE上分布图。
+
+3_Doublet 
+双细胞预测：采用DoubletFinder包，对每个样本进行双细胞预测。Doublet代表预测结果为双细胞，Singlet代表预测结果为单细胞。
+├── 1_DoubletScore-UMAP.p*			双细胞预测打分（doublets_score）的连续分布UMAP图。
+├── 2_DoubletFinder-UMAP.p*			双细胞分类结果（Singlet/Doublet）的连续分布UMAP图。
+├── 3_DoubletFinder-TSNE.p*			双细胞分类结果（Singlet/Doublet）的连续分布TSNE图。
+├── 4_Doublet_stats.csv				各样本预测为双细胞和单细胞的数量统计结果。
+└── DoubletFinder_res.csv			DoubletFinder分析结果，doublets_score列为双细胞评分，DF.classifacation列为预测结果，行名为细胞barcode，此文件为软件结果，用于生信分析，行数较多，不建议excel打开。
+
+4_Contamination 
+RNA污染预测：采用DecontX包，对每个样本进行RNA污染评分。
+├── 1_Contamination-Density.p*		各样本RNA污染评分密度分布图，横坐标为RNA污染评分，纵坐标为样本名称。
+├── 2_DecontX-UMAP/TSNE.p*			RNA污染评分的UMAP/TSNE分布图。
+└── DecontX_res.csv					DecontX分析结果，行名为细胞barcode，第一列为样本名称，第二列Contamination为RNA污染评分。此文件用于生信分析，行数较多，不建议excel打开。
+
+

@@ -1,0 +1,6 @@
+Rscript=/annogene/data2/share/software/SCV/SC_tools/Miniforge3/envs/pipeline3/bin/Rscript
+python=/annogene/data2/share/software/SCV/SC_tools/Miniforge3/envs/pipeline3/bin/python
+CONVET=/usr/local/bin/convert
+#CONVERT=/annoroad/data1/software/install/anaconda3/Anaconda3-2023.03-1/bin/convert
+#CONVERT=/annogene/data2/share/software/SCV/SC_tools/Miniforge3/envs/pipeline3/bin/convert
+perl=/annogene/data2/share/software/SCV/SC_tools/Miniforge3/envs/pipeline3/bin/perl

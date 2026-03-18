@@ -1,0 +1,36 @@
+scCluster 多策略去批次与多分辨率聚类结果说明
+==============================================
+
+本模块会根据您在配置项中指定的去批次方法（一到多个）生成对应的顶级目录集（如 `/harmony`, `/rpca`,等于跑了几次就出几个目录包）。
+并且提供根据 metadata 数据列拆分只提取指定细胞做细分（如仅提取 T 细胞做再降维）。
+
+每一个方法目录下，包含如下基础产出：
+1. *_Sample_UMAP.pdf / *_Group_UMAP.pdf 
+   未设定指定分辨率的前提下，初步提取的被批次矫正或整合后的细胞拓扑与样本地图。可直观对比各样本是否存在未被抹平的技术批次偏差。
+2. *_integrate_base.rds 
+   刚融合整理完数据的最原始 R 对象存储，包含了对应的 integrate Assay，供特殊排查调用。
+
+子目录 /res[N] （代表设定的聚类分辨率）：
+针对此整合方法，算法进行指定分辨率下属拆解所产生的信息集：
+
+1. 1_Cluster_UMAP.pdf / TSNE.pdf
+   直观展示该分辨率切割出来的大类别全貌分布。
+   
+2. 1_Cluster_split_Sample_UMAP.pdf
+   把上图按照各生物样本分屏拆开展示的平铺图（有助于甄别独有或特发亚群）。
+   
+3. 2_Cluster_Sample_CellRatio.pdf & CellCount.csv
+   条形堆叠图：统计该分辨率下，各类分群细胞分别属于哪个源样本/组的占比状态。配套输出含明细数据的提取表格。
+   
+4. 3_Cluster_all_markers.csv
+   寻找该分辨率下，被切割出的属于每个亚群的核心标记基因集(Marker Genes)，过滤规则为仅正相关（only.pos）、基础 logFC 截点为 0.25 (为了加速，限制了单亚群只抽样测算最多 300 细胞来缩短鉴定时间)。
+   
+5. 3_Cluster_Top10_DotPlot.pdf
+   提取并高亮展示每个不同群落排名前 10 的标记基因及其检出比例点阵图（即常说的气泡图，圆圈大小对应表达率，深度对应该 Cluster 特异表达度）。
+
+6. 4_RefMarker_GroupHeatmap_DotPlot.png / .pdf & 4_RefMarker_Seurat_DotPlot.png / .pdf (仅当提供了 refmarker_file 时存在)
+   根据您预先传入的已知经典 Marker 基因集合（含 CellType 分类），在整个大群中绘制的点阵图与热图点阵合并图。您可以借助此图非常直接地结合肉眼人工指派簇的生物学细胞类型名字。
+
+顶级汇总文件：
+- XXX_integrate_clustered.rds
+  包含了所有计算和测试产生的新 metadata 标注（包括那些以如 res0.4 为列名的新划分字段），可直接被下游流程直接读入认领继续作分析。

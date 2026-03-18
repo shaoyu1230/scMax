@@ -1,0 +1,155 @@
+# scMax 流程配置文件
+# ====================
+
+# 基础环境配置
+# --------------------
+# 如果 Rscript 没有加入环境变量，或者需要使用特定 conda 虚拟环境的 Rscript，请在此填写绝对路径
+# 例如: "/path/to/miniconda3/envs/sc_env/bin/Rscript"
+Rscript_path: "Rscript"
+
+01_scQC:
+  run: true
+  
+  # ------ 输入数据来源 (二选一) ------
+  # 方式A: 基于样本信息表合并数据
+  # 样本信息表，包含每行一个样本以及其文件路径、条件等
+  samples_file: "samples_info.csv" 
+  # 数据整合方法: merge, harmony, cca
+  method: "merge"
+  
+  # 方式B: 直接读取已有的 RDS 文件 (若使用方式A进行合并，请将此留空)
+  rdsfile: "" 
+  
+  # ------ 补充及质控参数 ------
+  # （可选）新的 metadata 信息表
+  metadatafile: "matadata.csv" 
+  
+  # 数据质控和批次效应参数
+  species: "mouse"          # 可选: human, mouse, other
+  doub_rate: 0.076          # 预期双细胞比例
+  mt_genes: ""              # 逗号分隔的线粒体基因 (如需要自定义)
+  hb_genes: ""              # 逗号分隔的血红蛋白基因
+  col_sample: "Sample"      # 样本在 metadata 中的列名
+  col_group: "Group"        # 分组在 metadata 中的列名
+  
+  # 可选高级分析
+  run_doublet: false        # 是否进行 DoubletFinder 双细胞推断
+  run_decontx: false        # 是否进行 DecontX 游离 RNA 污染估算
+
+02_filter:
+  run: true
+  
+  # ------ 输入来源 (默认承接 01_scQC 结果) ------
+  rdsfile: ""               # 需要过滤的质控 RDS（若承接上一步留空即可）
+  col_sample: "Sample"      # 分组样本列名称
+  
+  # ------ 过滤打磨阈值 ------
+  min_feat: 200             # 基因检出数下限
+  max_feat: 100000          # 基因检出数上限
+  min_count: 200            # 转录本检出数下限
+  max_count: 1000000        # 转录本检出数上限
+  max_mt: 20.0              # 线粒体占比允许最高阈值 %
+  max_hb: 5.0               # 血红蛋白占比允许最高阈值 %
+  
+  # ------ 高级剔除 (若在上一步跑过对应质控功能) ------
+  rm_doublet: false         # 开启后过滤掉被认定为 Doublet 的细胞，填写true/false
+  max_decontX: 1.0          # 容忍的最大 Contamination 程度 (一般为0->1.0之间)
+
+03_cluster:
+  run: true
+  
+  # ------ 输入与数据切片 ------
+  rdsfile: ""               # 需要聚类的 RDS 文件（承接上一步留空即可）
+  # 允许您选取指定子集再开展去批次聚类分析(如进行 T 细胞细分提取时很有用)，不需要则留空
+  subset_col: ""            # 如填入 "CellType"
+  subset_val: ""            # 取子集的条件值，如填入 "T cell"，如需并集提取支持逗号隔开
+
+  # ------ 去批次与聚类参数 ------
+  methods: "harmony,rpca"   # 去批次整合的方法，支持逗号分隔进行多个方法对照。可选: harmony, rpca, cca, none
+  resolutions: "0.2,0.4,0.6" # 需要尝试比较的聚类分辨率(resolution)梯度，支持逗号分隔多个进行扫库
+  
+  col_sample: "Sample"      # 分组样本列名称
+  col_group: "Group"        # 大组/条件类名称
+  integrate_by: "Sample"    # 指定去批次效应时依赖的校正分类列名(通常按样本"Sample"，如果按大组批次则填"Group")
+  nfeatures: 2000           # 寻找的高频差异表达特征基因数
+  npcs: 30                  # 构建主成分选取维度
+  
+  # ------ 附加特征标记分析 (可选) ------
+  refmarker_file: ""        # 若提供包含 CellType 和 Markers 列的 TSV 文件，可自动计算经典 Marker 在各群的 DotPlot 映射
+
+04_subcluster:
+  run: true
+  
+  # ------ 输入来源与必填分离项 ------
+  rdsfile: ""               # 需要二次降维的 RDS（上一步 03_cluster 中您比较满意的产出物，请务必填写带实际路径的对象）
+  subset_col: "res0.4"      # 必填！依据哪一列提取亚群，通常填写上一步产生的某一个较优分辨率分组列如 res0.4 或者专家标注列名
+  subset_val: "1,3,5"       # 取子集提取的目标群体，只提取第1,3,5大群来做深度挖掘
+  
+  # ------ 亚群再次去批次策略 ------
+  # 小细胞集很容易报错，推荐保留 re_harmony 或者 original_integrated，可填单个或英文逗号写多个对照：
+  # re_harmony (对原亚群再平衡重塑，抗弱群性强); original_integrated(安全锁死，沿用剥离前的大地图矩阵坐标进行细切); re_rpca / re_cca (不平衡时极容易找不到锚点报错出跳)
+  methods: "re_harmony,original_integrated" 
+
+  resolutions: "0.2,0.4"    # 亚群细分的聚类分辨率
+  
+  col_sample: "Sample"      # 分组样本列名称
+  col_group: "Group"        # 大组/条件类名称
+  integrate_by: "Sample"    # 指定去批次效应时依赖的校正分类列名
+  nfeatures: 1500           # 亚群细分重新找的高变特征基因数 (不建议太多，因为是内部比较)
+  npcs: 20                  # 亚群较小，用于构建主成分的 PCA 维度稍微调低
+  refmarker_file: ""        # （可选）针对此亚群特化的经典 Marker 映射文件，提供时将画出 DotPlot 图。文件以Tab键分割，基因之间以英文逗号分割。列名要包含CellType，Markers
+
+
+05_celltype:
+  run: true
+  
+  # ------ 输入来源与列映射 ------
+  rdsfile: ""               # 需要进行打签的目标 RDS（一般是 03 或 04 的终产物）
+  annofile: "dummy.xls"     # 必填！专家的手动注释对应表格（包含 Cluster, CellType）。（如果有 Markers 列也会一并生成点阵图）
+  cluster_col: "res0.4"     # 需要被合并转换的那列高精分辨率数字标签列的名字（比如：res0.4）
+  celltype_col: "CellType"  # 经过合并产生的新列需要叫什么名字（默认：CellType）
+  
+  col_sample: "Sample"      # 拆分展示时依赖的分组样本列名称
+  col_group: ""             # 如果需要基于比较大组条件画出面积图时填写的分类
+  
+  # ------ 排序与颜色 (可选) ------
+  sample_order: ""          # 样本展示顺序，逗号分隔，如 "S1,S2,S3"
+  group_order: ""           # 分组展示顺序，如 "Control,Treat"
+  cluster_colors: ""        # 集群自定义颜色，如 "#FF0000,#00FF00..."
+  celltype_levels: ""       # 细胞类型展示顺序，如 "T cell,B cell"
+  celltype_colors: ""       # 细胞类型自定义颜色
+  celltype_keep: ""         # 细胞类型保留列表（可选，留空则按注释表自动汇总）
+
+  # ------ 可选流程开关 ------
+  do_cluster: true          # 运行 cluster 绘图及差异/富集
+  do_refmarker: true        # 运行参考 marker 绘图
+  do_annotation: true       # 仅添加注释
+  do_celltype: true         # 运行 celltype UMAP 和比例图
+  do_celltype_de: false     # 运行细胞类型差异与富集（可选）
+  annotated_rds: ""         # 直接读取已有注释 rds（可选，用于跳过 do_annotation）
+  
+  # ------ 多格式导出 & 报告渲染环境 ------
+  # Seurat 对象默认同时导出 rds / h5ad / cloupe
+  louper_path: ""           # 如 loupeR 找不到 louper 可执行文件，可在此指定完整路径
+  python_path: "python3"    # 拼装态报表基础环境（需安装基本模块）
+  jupyter_path: "jupyter"   # 用于将 ipynb 转 html 的 nbconvert 环境路径
+
+
+# ==========================================================
+# 报告聚合与中央数据库信息注册（Web UI）
+# ==========================================================
+Database_Info:
+  run: true
+  db_path: "/Users/angela/Documents/00_annoroad/06_Development/scMax/WebUI/scMax_projects.db"  # 给定存储 sqlite 的核心库文件位置
+  std_project_id: "PM-X1234"       # 标分项目编号
+  custom_project_id: "A042"         # 个性化项目编号 (如 A042)
+  crm_id: "AN20231001"            # crm下单编号 (一般AN开头)
+  annotation_level: "MajorType"   # 分群层次 (例如: MajorType, SubType-T cells)
+  species: "Human"                # 物种英文信息
+  species_zh: "人"                 # 物种中文信息
+  tissue_type: "Heart"            # 组织类型英文
+  tissue_type_zh: "心脏"           # 组织类型中文
+  analyst: "shaoyusong"        # 分析人
+  orgdb: ""                       # (针对人/鼠外物种)自定义富集orgdb，例如 "org.Rn.eg.db"
+  organism_kegg: ""               # (针对人/鼠外物种)自定义富集kegg简称，例如 "rno"
+  notes: "这里是填写的实验或送样注意事项，比如含有较多破裂细胞请专家在亚群谨慎对待..."  

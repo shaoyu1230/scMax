@@ -1,0 +1,69 @@
+docdir=$(dir $(abspath $(firstword $(MAKEFILE_LIST))))/report
+bindir=$(dir $(abspath $(firstword $(MAKEFILE_LIST))))/
+include $(bindir)/config/config.txt
+tmpdir=$(dir $(abspath $(firstword $(MAKEFILE_LIST))))/script
+middle_dir=$(outdir)/output
+result_dir=$(outdir)/report
+
+ifdef metadatas
+  metadata=--metadata $(metadatas)
+endif
+min ?= 200
+max ?= 1000000000
+mtp ?= 20
+hbp ?= 5
+minc ?= 200
+maxc ?= 1000000000
+Dou ?= False 
+decontX ?=1
+
+
+HELP:
+	@echo -e '程序名称：Seurat质控后过滤'
+	@echo 
+	@echo -e '程序功能: 该工具是对rds文件，进行Seurat质控后过滤'
+	@echo 
+	@echo 程序参数:
+	@echo -e 'dataDir：输入的rds文件  [必选]' 
+	@echo -e 'metadatas：输入的metadata文件  [选填] '
+	@echo -e 'min: [选填] 基因表达数目最小值。'
+	@echo -e 'max: [选填] 基因表达数目最大值.'
+	@echo -e 'mtp: [选填] 基于线粒体百分比过滤细胞：默认0'
+	@echo -e 'hbp: [选填] 基于红细胞百分比过滤细胞：默认1000000'
+	@echo -e 'minc: [选填] 转录本的表达量最小值：默认0'
+	@echo -e 'maxc: [选填] 转录本的表达量最大值：默认10000000'
+	@echo -e 'Dou: [选填] 是否去除双细胞：默认False不去除;True为进行去双胞'
+	@echo -e 'decontX [选填] 去除环境污染的阈值：默认1000000'
+	@echo -e 'outdir: [必选] 输出目录'
+	@echo
+	@echo 使用方法：
+	@echo make -f this.makefile dataDir= metadatas=  min= max= mtp= hbp= minc= maxc= Dou= decontX= outdir= Seurat
+	@echo
+	@echo 结果文件：
+	@echo -e ‘outdir/upload’
+	@echo 资源耗时：2min
+	@echo -e '资源（是否与输入文件大小有关）：是'
+	@echo
+	@echo 注意事项：
+	@echo -e '参考test下实例！'
+	@echo -e '常见个性化调整参数为：min=200 max=10000 mtp=20 hbp=10 umi=2500'
+
+
+.PHONY:Seurat
+Seurat:
+	echo Seurat start at `date`
+	echo $(metadata)
+	[ -s $(middle_dir) ] ||mkdir -p $(middle_dir)
+	$(Rscript) $(tmpdir)/seurat_filter.R -d $(dataDir) $(metadata) -o $(middle_dir)  --min $(min) --max $(max) --mtp $(mtp) --hbp $(hbp) --minc $(minc) --maxc $(maxc) --Dou $(Dou) --decontX $(decontX) 
+	$(python) $(tmpdir)/filter_stat_summary.py -c $(middle_dir)/filter_stat_cell.csv -o $(middle_dir)/filter_stat_cell.xls
+	mkdir -p $(result_dir)
+	cp $(middle_dir)/final_metadata.csv $(result_dir)/../
+	mv $(middle_dir)/final_metadata.csv $(result_dir)/
+	cp $(middle_dir)/filter_stat_cell.xls $(result_dir)/
+	cp $(middle_dir)/*.rds $(result_dir)/../
+	mv $(middle_dir)/*.rds $(result_dir)/
+	cp $(middle_dir)/*Vln_*QC.pdf $(result_dir)/
+	cp $(middle_dir)/*Vln_*QC.png $(result_dir)/
+	cp $(docdir)/结果文件说明.txt $(result_dir)/
+	rm -r $(middle_dir)
+	echo Seurat end at `date`

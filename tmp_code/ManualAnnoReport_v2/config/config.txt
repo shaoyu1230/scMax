@@ -1,0 +1,3 @@
+CONVERT=/usr/local/bin/convert
+RSCRIPT=/annogene/data2/share/software/SCV/SC_tools/Miniforge3/envs/pipeline3/bin/Rscript
+PYTHON=/annogene/data2/bioinfo/PMO/wenzhudai/Software/mamba/envs/jupyter_dwz/bin/python

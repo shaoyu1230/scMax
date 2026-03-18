@@ -1,0 +1,16 @@
+结果文件：
+├── 1_cluster_characterization		 cluster特征：包括cluster分布，样本/分组分布，cluster占比等
+│   ├── 1_cluster/Sample/Group.UMAP.p*	cluster,样本，分组UMAP分布图
+│   ├── 2_cluster/Sample/Group.UMAP.p*	cluster,样本，分组单独的UMAP分布图
+│   ├── 3_Count/Frac-seurat_clusters.in.Sample/Group-heatmap/bar/trend.p*	cluster在样本/分组中的细胞数量，占比绘图
+│   ├── 4_Cluster.DE							 cluster差异基因表及绘图
+│   └── 5_Enrich									 cluster差异基因富集分析结果
+├── 2_marker_expression						参考marker表达绘图
+├── 3_annotation									 细胞类型注释结果
+│   ├── CellType_All							 所有细胞注释结果
+│   └── CellType_Keep							去除低质量、doublet等不感兴趣的细胞后，细胞注释结果
+├── 4_celltype_fraction						细胞占比分析
+├── 5_celltype_characterization		细胞类型特征，包括差异分析和富集分析
+│   ├── 1_CellType_DE
+│   └── 2_CellType_Enrich
+└── CellType.Annotation_report.html				细胞类型注释报告

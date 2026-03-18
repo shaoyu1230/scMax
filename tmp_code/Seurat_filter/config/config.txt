@@ -1,0 +1,5 @@
+###############################################参数 变量############################################################
+#RSCRIPT5=/annoroad/data1/software/bin/miniconda/envs/Monocle/bin/Rscript
+Rscript=/annogene/data2/share/software/SCV/SC_tools/Miniforge3/envs/pipeline3/bin/Rscript
+python=/annogene/data2/share/software/SCV/SC_tools/Miniforge3/envs/pipeline3/bin/python
+#python3=/annoroad/data1/software/bin/miniconda/envs/python3_base/bin/python3

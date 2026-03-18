@@ -1,0 +1,105 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h2>🔬 单细胞注释经验数据库</h2>
+        <p class="text-muted">此处汇集了通过 scMax pipeline 产出的最新注释总概。所有记录支持排序和筛选、使用右侧搜索框执行全局模糊查取。</p>
+    </div>
+</div>
+
+<!-- 数据概览仪表盘 -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary shadow-sm h-100">
+            <div class="card-body text-center">
+                <h6 class="card-title text-uppercase fw-bold text-white-50">已收录个性化项目</h6>
+                <h1 class="display-5 fw-bold mb-0">{{ stats.projects }}</h1>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success shadow-sm h-100">
+            <div class="card-body text-center">
+                <h6 class="card-title text-uppercase fw-bold text-white-50">涵盖各类物种</h6>
+                <h1 class="display-5 fw-bold mb-0">{{ stats.species }}</h1>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info shadow-sm h-100">
+            <div class="card-body text-center">
+                <h6 class="card-title text-uppercase fw-bold text-white-50">涵盖组织器官</h6>
+                <h1 class="display-5 fw-bold mb-0">{{ stats.tissues }}</h1>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning text-dark shadow-sm h-100">
+            <div class="card-body text-center">
+                <h6 class="card-title text-uppercase fw-bold text-black-50">解析出众细胞类群</h6>
+                <h1 class="display-5 fw-bold mb-0">{{ stats.cell_types }}</h1>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover datatable w-100">
+        <thead class="table-dark">
+            <tr>
+                <th>流水 ID</th>
+                <th>CRM 订单</th>
+                <th>分群层次</th>
+                <th>标分库编号</th>
+                <th>个性化代号</th>
+                <th>物种</th>
+                <th>组织器官</th>
+                <th>分析人</th>
+                <th>时间戳记</th>
+                <th>操作与图表外链</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in projects %}
+            <tr>
+                <td>#{{ p.id }}</td>
+                <td><span class="badge bg-primary">{{ p.crm_id or '-' }}</span></td>
+                <td><span class="badge bg-warning text-dark">{{ p.annotation_level or '-' }}</span></td>
+                <td><span class="badge bg-secondary">{{ p.std_project_id or '-' }}</span></td>
+                <td><span class="badge bg-info text-dark">{{ p.custom_project_id or '-' }}</span></td>
+                <td>{{ p.species_zh or p.species }}</td>
+                <td>{{ p.tissue_type_zh or p.tissue_type or '-' }}</td>
+                <td>{{ p.analyst }}</td>
+                <td style="font-size: 0.9em; white-space: nowrap;">{{ p.created_at[:16] }}</td>
+                <td>
+                    <div class="btn-group btn-group-sm" role="group">
+                        {% if p.report_path or p.bk_report %}
+                        <a href="/view_report?path={{ p.report_path }}&bk_path={{ p.bk_report }}" target="_blank"
+                            class="btn btn-outline-success">网页报告</a>
+                        {% endif %}
+
+                        {% if p.umap_path or p.bk_umap %}
+                        <button type="button" class="btn btn-outline-info img-preview"
+                            src="/view_image?path={{ p.umap_path }}&bk_path={{ p.bk_umap }}">UMAP 预览</button>
+                        {% endif %}
+
+                        {% if p.fraction_path or p.bk_fraction %}
+                        <button type="button" class="btn btn-outline-warning img-preview"
+                            src="/view_image?path={{ p.fraction_path }}&bk_path={{ p.bk_fraction }}">占比栏状图</button>
+                        {% endif %}
+                    </div>
+                    {% if p.notes %}
+                    <div class="mt-2 text-muted"
+                        style="font-size: 0.8em; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                        title="{{ p.notes }}">
+                        注: {{ p.notes }}
+                    </div>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+结果文件说明：
+
+|--*filter_stat_cell.xls
+|--*final_obj.rds
+|--*final_metadata.csv
+|--*Vln_beforeQC.pdf/png
+`--*Vln_afterQC.pdf/png
+
+1.*filter_stat_cell.xls:
+（1）sample：样本名称；
+（2）total_cell：总的有效细胞数；
+（3）remaining_cell；过滤后保留的有效细胞数；
+（4）low_nFeature：表达基因数低于质控指标的细胞数；
+（5）high_nFeature：表达基因数高于质控指标的细胞数；
+（6）high_percent.mt：线粒体基因比例高于质控指标的细胞数；
+（7）high_HB：红细胞基因比例高于质控指标的细胞；
+（8）DF.classifications：双细胞过滤数；
+（9）Contamination：RNA污染比例高于阈值的过滤数；
+（10）all_filtered_cell：所有被过滤掉的细胞数量。
+
+2.*_filter.rds:
+QC过滤后的rds文件。
+
+3.*_final_metadata.csv:
+QC过滤后的metadata文件
+
+4.*Vln_beforeQC.pdf/png
+过滤前的样品表达量结果展示，小提琴图的每个点代表一个细胞，从上至下分别为基因表达数目、unique UMI总数和线粒体基因比例等的结果。
+
+5. *Vln_afterQC.pdf/png
+过滤后的样品表达量结果展示，小提琴图的每个点代表一个细胞，从上至下分别为基因表达数目、unique UMI总数和线粒体基因比例等的结果。
+
+
+参考资料
+1、方法说明
+使用Seurat进行质控。更多介绍说明详见：https://satijalab.org/seurat/index.html

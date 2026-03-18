@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>scMax 注释数据库导航中心</title>
+  <!-- 使用 Bootstrap 5 样式快速搭建现代 Web 布局 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+  <link href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.bootstrap5.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+
+    .navbar-brand {
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .table-responsive {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .img-preview {
+      max-width: 150px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .img-preview:hover {
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">scMax DB Explorer</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link {% if active_page == 'projects' %}active{% endif %}" href="/">🔬 项目信息记录库</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if active_page == 'experience' %}active{% endif %}" href="/experience">🧬
+              marker经验库</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container-fluid mb-5">
+    {% block content %}{% endblock %}
+  </div>
+
+  <!-- Modal 用于放大显示图片 -->
+  <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">图表预览</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center">
+          <img id="modalImage" src="" class="img-fluid" alt="Preview">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+  <!-- DataTables Export Buttons JS -->
+  <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.bootstrap5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      // 初始化全局数据表格，支持前端极速搜、排、比对
+      $('.datatable').DataTable({
+        "language": { "url": "//cdn.datatables.net/plug-ins/1.13.4/i18n/zh.json" },
+        "pageLength": 25,
+        "order": [[0, "desc"]], // 默认按照入库时间 ID 倒叙
+        "dom": "<'row mb-2'<'col-sm-12 col-md-4'l><'col-sm-12 col-md-4 text-center'B><'col-sm-12 col-md-4'f>>" +
+          "<'row'<'col-sm-12'tr>>" +
+          "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+        "buttons": [
+          { extend: 'excelHtml5', text: '📥 导出 Excel', className: 'btn btn-sm btn-success' },
+          { extend: 'csvHtml5', text: '📥 导出 CSV', className: 'btn btn-sm btn-info text-white' }
+        ]
+      });
+
+      // 图片点击大图模态框逻辑
+      $('.img-preview').click(function () {
+        var src = $(this).attr('src');
+        $('#modalImage').attr('src', src);
+        var myModal = new bootstrap.Modal(document.getElementById('imageModal'));
+        myModal.show();
+      });
+    });
+  </script>
+</body>
+
+</html>

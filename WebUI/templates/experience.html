@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h2>🧬 单细胞marker经验库</h2>
+        <p class="text-muted">当每一次 pipeline 终结（带有成功解析的 .xls 注释表时），该表中的每一项都会被拆解作为独立的分子经验记录在此。用于长期训练模型或marker 查询。</p>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped datatable w-100">
+        <thead class="table-success">
+            <tr>
+                <th width="5%">ID</th>
+                <th width="8%">CRM下单编号</th>
+                <th width="8%">分群层次</th>
+                <th width="10%">物种</th>
+                <th width="10%">组织器官</th>
+                <th width="8%">cluster编号</th>
+                <th width="15%">细胞类型</th>
+                <th width="30%">特异高表达Markers</th>
+                <th width="14%">参考文献</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in experiences %}
+            <tr>
+                <td>{{ e.id }}</td>
+                <td><span class="badge bg-dark">{{ e.crm_id or '-' }}</span></td>
+                <td><span class="badge bg-warning text-dark">{{ e.annotation_level or '-' }}</span></td>
+                <td>{{ e.species }}</td>
+                <td>{{ e.tissue_type or '-' }}</td>
+                <td class="text-center fw-bold">{{ e.cluster }}</td>
+                <td class="text-primary fw-bold">{{ e.cell_type }}</td>
+                <td style="word-break: break-all;">
+                    <small>
+                        {{ e.markers }}
+                    </small>
+                </td>
+                <td>
+                    {% if e.reference %}
+                    <span class="badge bg-secondary" title="{{ e.description }}">{{ e.reference }}</span>
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

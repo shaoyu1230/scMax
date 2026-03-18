@@ -1,0 +1,28 @@
+scFilter 过滤结果文件目录说明
+===============================
+1. filter_stat_cell.csv
+   各个样本经过定值阈值过滤后的细胞数目减少统计明细表，包含：
+   - total_cell: 初始细胞总数
+   - remaining_cell: 经过过滤后最终保留的高质量细胞数
+   - low_nFeature / high_nFeature: 在基因表达数量上下限之外被过滤的细胞数
+   - low_nCount / high_nCount: 在转录本表达数量极值外被过滤的细胞数
+   - high_percent_mt: 因为线粒体比例过高被过滤的细胞数
+   - high_HB: 因为红细胞比例过高被过滤的细胞数
+   - Doublet: 对应剔除的双细胞(若开启)
+   - high_Contamination: 去除的游离 mRNA 背景污染过重细胞(若开启)
+   - all_filtered_cell: 该样本在本次步骤中总剥落的死细胞或非满血细胞数
+
+2. filter_stat_cell.xls
+   排版结构经过自动化矩阵转置后的 TSV 表格格式格式，便于您直接全选粘贴进 Excel 汇总报表以供展示。
+
+3. Vln_beforeQC.pdf / .png
+   由于第一步结果是未经过任何过滤的毛坯数据，此小提琴图为您展示剔除前所有的细胞指标分布情况。
+
+4. Vln_afterQC.pdf / .png
+   根据您指定的各项极值参数进行彻底切片和修剪打磨后，保留下来的高质量细胞相应的堆叠属性小提琴图，供确认按阈值筛选后结果是否符合预期。
+
+5. final_obj.rds
+   过滤完成的Seurat Rds 对象主程序。可直接向后接入去批次、聚类的后续分析。
+
+6. final_metadata.csv
+   过滤完成的Seurat Rds 对象的 meta 信息表。

@@ -1,0 +1,5 @@
+SampleName,FilePath,Group
+WildType_1,/absolute/path/to/WildType_1/outs/filtered_feature_bc_matrix,WT
+WildType_2,/absolute/path/to/WildType_2/outs/filtered_feature_bc_matrix,WT
+KnockOut_1,/absolute/path/to/KnockOut_1_data.rds,KO
+KnockOut_2,/absolute/path/to/KnockOut_2_data.rds,KO

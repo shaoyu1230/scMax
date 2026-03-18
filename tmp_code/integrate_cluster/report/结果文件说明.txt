@@ -1,0 +1,45 @@
+integrate: 整合目录
+├── *_Group_TSNE.pdf/png：整合去批次按照组绘制TSNE图，每个点代表一个细胞，每种颜色代表一个组
+├── *_Group_UMAP.pdf/png：整合去批次按照组绘制UMAP图，每个点代表一个细胞，每种颜色代表一个组
+├── *_Sample_TSNE.pdf/png：整合去批次按照组绘制TSNE图，每个点代表一个细胞，每种颜色代表一个样本
+├── *_Sample_UMAP.pdf/png：整合去批次按照组绘制UMAP图，每个点代表一个细胞，每种颜色代表一个样本
+├── integrate_metadata.csv：整合后rds的meta.data表格
+└── integrate.rds：整合后rds对象
+
+cluster：分群目录
+├── res[分辨率1]
+│   ├── 1_qc_clusters_VlnPlot.pdf/png：分群后质控指标按照cluster小提琴图
+│   ├── 2_clusters_TSNE.pdf/png：分群后cluster TSNE图，每个点代表一个细胞，每种颜色代表一个cluster
+│   ├── 2_clusters_UMAP.pdf/png：分群后cluster UMAP图，每个点代表一个细胞，每种颜色代表一个cluster
+│   ├── 2_clusters_sample_TSNE.pdf/png：分群后cluster/样本 TSNE图，每个点代表一个细胞，左图每种颜色代表一个cluster，右图每种颜色代表一种样本
+│   ├── 2_clusters_sample_UMAP.pdf/png：分群后cluster/样本 UMAP图，每个点代表一个细胞，左图每种颜色代表一个cluster，右图每种颜色代表一种样本
+│   ├── 2_clusters_splitbyGroup_TSNE.pdf/png：按照组分隔分群后cluste TSNE图
+│   ├── 2_clusters_splitbyGroup_UMAP.pdf/png：按照组分隔分群后cluste UMAP图
+│   ├── 2_clusters_splitbySample_TSNE.pdf/png：按照样本分隔分群后cluste TSNE图
+│   ├── 2_clusters_splitbySample_UMAP.pdf/png：按照样本分隔分群后cluste UMAP图
+│   ├── 2_cluster_group_cellnum.csv：分群后每个cluster在每个组的细胞数
+│   ├── 2_clusters_group_cellratio.pdf/png：分群后每个cluster在每个组的细胞占比图
+│   ├── 2_cluster_sample_cellnum.csv：分群后每个cluster在每个样本的细胞数
+│   ├── 2_clusters_sample_cellratio.pdf/png：分群后每个cluster在每个样本的细胞占比图
+│   ├── 3_clusters_allgenes_averageExpression.csv
+│   ├── 3_clusters_all.markers_FDR0.05.csv
+│   ├── 3_cluster_top10_markers_genes_DotPlot.pdf/png
+│   ├── 3_cluster_top10_markers_genes_pheatmap.pdf/png
+└── res[分辨率2]
+└── res[...]
+
+cluster/res[分辨率]/3_clusters_all.markers_FDR0.05.csv
+各个cluster高表达的基因列表：
+gene                 比较分析的基因symbol名称。
+p_val                第七列亚群（第七列为亚群编号）的细胞与除了此亚群所有细胞比较的，统计学检验的p值。
+avg_log2FC            第七列亚群（第七列为亚群编号）的细胞与除了此亚群所有细胞平均表达量差异倍数的log2对数值，其实这里进行了一些数据处理。(Seurat4版本)
+pct.1                第七列亚群（第七列为亚群编号）的细胞中表达该基因的细胞数占总细胞数的比例。
+pct.2                除了第七列亚群（第七列为亚群编号）的细胞以外其他所有细胞中表达该基因的细胞数占所有其他细胞数的比例。
+p_val_adj            第七列亚群（第七列为亚群编号）的细胞与除了此亚群所有细胞比较的，统计学检验的p值的校正值。
+cluster              比较的细胞亚群编号
+
+cluster/res[分辨率]/*_top10_markers_genes_DotPlot.pdf/png:top marker基因dotplot绘图
+
+cluster/res[分辨率]/*_top10_markers_genes_pheatmap.pdf/png:top marker基因热图绘图
+
+cluster/res[分辨率]/*_clusters_allgenes_averageExpression.csv:所有基因在每个cluster的平均表达量

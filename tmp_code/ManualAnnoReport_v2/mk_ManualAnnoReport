@@ -1,0 +1,68 @@
+# 定义变量
+include $(dir $(abspath $(firstword $(MAKEFILE_LIST))))/config/config.txt
+scriptdir=$(dir $(abspath $(firstword $(MAKEFILE_LIST))))/script
+plot_clusterR = $(scriptdir)/plot_cluster.R
+cluster_deR = $(scriptdir)/cluster_de.R
+add_annotationR = $(scriptdir)/add_annotation.R
+SCRIPT1 = $(scriptdir)/run_Part1-cluster_properties.R
+SCRIPT2 = $(scriptdir)/run_Part2-celltype_annotation.R
+#SCRIPT3 = $(BINDIR)/run_generate_report.sh
+SCRIPT3 = $(scriptdir)/img2singlehtml.py
+SCRIPT4 = $(scriptdir)/copyReport.sh
+HELP:
+	@echo "Usage: make -f mk_ManualAnnoReport [target] [options]"
+	@echo ""
+	@echo "Targets:"
+	@echo "  CLUSTER config=<path>  运行 Part1: 聚类结果绘图，cluster差异富集分析（需提供 config文件）"
+	@echo "  ANNO    config=<path>  运行 Part2: 细胞类型注释，细胞类型差异富集分析（需提供 config文件）"
+	@echo "  REPORT  config=<path> 生成最终报告所在目录（在完成 CLUSTER 和 ANNO后执行）"
+	@echo ""
+	@echo "示例:"
+	@echo "  make -f mk_ManualAnnoReport config=config.ini CLUSTER"
+	@echo "  make -f mk_ManualAnnoReport config=config.ini ANNO"
+	@echo "  make -f mk_ManualAnnoReport config=config.ini REPORT"
+	@echo ""
+	@echo 注意事项：
+	@echo "  config 参考文件：/annogene/data2/bioinfo/SCV/Repositories/Module/ManualAnnoReport/ManualAnnoReport_v1.0.2/script/config.ini "
+	@echo "  测试目录： "
+	@echo ""
+	@echo "  生成的html文件需要在结果文件同目录 "
+
+# 伪目标和默认目标
+.PHONY: all clean plot_cluster cluster_de add_annotation celltype_de report group_de
+all: clean plot_cluster cluster_de add_annotation celltype_de report
+reportdir=$(shell grep outdir= $(config) | cut -d= -f2)
+clean:
+	echo `date "+%Y%m%d %H:%M:%S"` "Cleaning analysis dir ..."
+	if [ -d "$reportdir" ]; then 
+			echo "目录 $reportdir 存在，现在将删除它。"
+    # 删除目录及其内容
+    rm -r "$reportdir"
+plot_cluster: 
+	echo `date "+%Y%m%d %H:%M:%S"` "Running Part1: Cluster Properties with $(config)..."
+	$(RSCRIPT) $(plot_clusterR) -c $(config) 
+cluster_de:
+	echo `date "+%Y%m%d %H:%M:%S"` "Running Part1: Finding Cluster markers..."
+	$(RSCRIPT) $(cluster_deR) -c $(config) 
+add_annotation: 
+	echo `date "+%Y%m%d %H:%M:%S"` "Running Part2: Celltype Annotation with $(config)..."
+	$(RSCRIPT) $(add_annotationR) -c $(config)  
+celltype_de:
+	echo `date "+%Y%m%d %H:%M:%S"` "Running Part2: Finding CellType markers..."
+CLUSTER:
+ANNO:
+# 整理结果文件，生成报告：依赖CLUSTER和ANNO
+# reportdir需要是CLUSTER和ANNO的输出目录，report.html也会生成在同级目录
+REPORT: 
+	echo `date "+%Y%m%d %H:%M:%S"` "Generating Celltype Annotation Reports started!"	
+	echo "Report dir: $(reportdir)"
+	sh $(SCRIPT4) $(scriptdir)/../report $(reportdir) 
+	cp $(scriptdir)/../report/结果文件说明.txt $(reportdir) 
+	cd $(reportdir) && /annogene/data2/bioinfo/PMO/wenzhudai/Software/mamba/envs/jupyter_dwz/bin/jupyter nbconvert --no-input --template pj --to html report.ipynb && $(PYTHON) $(SCRIPT3) report.html &&	mkdir -p upload && ln -s $(reportdir)/1_cluster_characterization  $(reportdir)/2_marker_expression  $(reportdir)/3_annotation  $(reportdir)/4_celltype_fraction  $(reportdir)/5_celltype_characterization $(reportdir)/CellType.Annotation_report.html $(reportdir)/结果文件说明.txt $(reportdir)/Rdata/*_CellType.rds $(reportdir)/upload
+	cd $(reportdir) && zip -r upload.zip upload
+	echo `date "+%Y%m%d %H:%M:%S"` "Generating Celltype Annotation Reports done!" && touch $@
+update_database:
+	echo `date "+%Y%m%d %H:%M:%S"` "Updating Celltype Annotation to database!"
+
+group_de:
+	echo `date "+%Y%m%d %H:%M:%S"` "Running Part3: Finding Group DEGs of each CellType ..."

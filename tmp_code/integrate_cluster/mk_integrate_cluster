@@ -1,0 +1,74 @@
+tmpdir=$(dir  $(abspath $(firstword $(MAKEFILE_LIST))))/
+SCRIPT=$(tmpdir)/script
+ifdef config
+        include $(config)
+else
+        include $(tmpdir)/config/config.txt
+endif
+
+ifdef metadatas
+    metadata = --metadata $(metadatas)
+endif
+
+# min ?= 0
+# max ?= 1000000000
+# mtp ?= 100
+# hbp ?= 100
+# minc ?= 0
+# maxc ?= 1000000000
+# Dou ?= no
+# decontX ?=1000000
+HELP:
+		@echo
+		@echo -e '程序功能：单细胞整合分群'
+		@echo 
+		@echo 程序参数：
+		@echo -e 'ini:     [必选] 输入文件，ini文件'	
+		@echo -e 'outdir:  [必选] 输出目录'		
+		@echo
+		@echo 使用方法：
+		@echo make -f mk_integrate_cluster ini= outdir= [integrate]
+		@echo -e '使用方法示例：'
+		@echo -e 'make -f mk_integrate_cluster ini=dir/config.ini outdir=dir/result integrate cluster'
+		@echo 
+		@echo 结果交付：
+		@echo -e 'outdir/report/'
+		@echo
+		@echo 资源耗时：
+		@echo -e '资源（是否与输入文件大小有关）：是'
+		@echo -e '人时2 ：机时：6'
+		@echo -e '是否建议qsub投递：是'
+		@echo
+		@echo 注意事项：
+		@echo -e 'outdir 应填写绝对路径'
+		@echo -e '去批次方法有：harmony(推荐),rpca,cca,none'
+		@echo -e '如果分群效果不好，建议三个参数调参：nfeatures,npc,dims'
+		@echo -e '默认：nfeatures<-2000;dims<-20'
+		@echo -e '群的数目可以通过分辨率调参，一般.4，0.6（建议），0.8'
+		@echo -e '默认report文件夹中rds交付'
+		@echo
+
+integrate:
+		echo `date "+%Y%m%d %H:%M:%S"` "- integrate - INFO - 开始分析"
+		#[ -d $(outdir) ] && echo "integrate detect outdir is exist" || mkdir -p $(outdir) $(outdir)/output
+		mkdir -p $(outdir) $(outdir)/output
+		rm -rf ${outdir}/output/integrate && mkdir ${outdir}/output/integrate
+		${Rscript} $(tmpdir)/script/integrate.R -c ${ini} -o ${outdir}/output/integrate 
+		#rm ${outdir}/output/integrate/Rplots.pdf
+		echo `date "+%Y%m%d %H:%M:%S"` "- integrate - INFO - 分析完成"		
+cluster:
+		echo `date "+%Y%m%d %H:%M:%S"` "- cluster - INFO - 开始分析"
+		#[ -d $(outdir) ] && echo "cluster detect outdir is exist" || mkdir -p $(outdir) $(outdir)/output
+		mkdir -p $(outdir) $(outdir)/output
+		rm -rf ${outdir}/output/cluster && mkdir ${outdir}/output/cluster
+		${Rscript} $(tmpdir)/script/cluster.R -r ${outdir}/output/integrate/integrate.rds -c ${ini} -o ${outdir}/output/cluster -m ${outdir}/output/integrate/integrate_metadata.csv
+		#rm ${outdir}/output/cluster/*/Rplots.pdf
+		for file in `ls $(outdir)/output/integrate/*pdf $(outdir)/output/cluster/*/*pdf`;do ${CONVERT}  -density 300 -background white -flatten  $${file} $${file%.*}.png;done
+		rm -rf $(outdir)/report && mkdir $(outdir)/report
+		#cd $(outdir)/report && ln -s $(outdir)/output/* ./
+		#cd $(outdir)/report && cp -r $(outdir)/output/* ./
+		#hiplot，镜像中不能切换目录
+		cp -r $(outdir)/output/  $(outdir)/report
+		#ln -s $PWD/output/* report/
+		cp $(tmpdir)/report/结果文件说明.txt ${outdir}/report
+		echo `date "+%Y%m%d %H:%M:%S"` "- cluster - INFO - 分析完成"
