@@ -69,8 +69,8 @@ if (!is.null(group_col)) {
 species <- if (!is.null(db_conf) && !is.null(db_conf$species)) db_conf$species else "Human"
 
 # 支持用户从 config 读取直接外置定义的 orgdb 和 org_kegg（适用于人/鼠外的杂合物种）
-orgdb_custom <- if (!is.null(db_conf) && !is.null(db_conf$orgdb)) db_conf$orgdb else ""
-kegg_custom <- if (!is.null(db_conf) && !is.null(db_conf$organism_kegg)) db_conf$organism_kegg else ""
+orgdb_custom <- if (!is.null(ct_conf) && !is.null(ct_conf$orgdb)) ct_conf$orgdb else ""
+kegg_custom <- if (!is.null(ct_conf) && !is.null(ct_conf$organism_kegg)) ct_conf$organism_kegg else ""
 
 if (orgdb_custom != "" && kegg_custom != "") {
   orgdb <- orgdb_custom

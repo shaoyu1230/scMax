@@ -123,10 +123,15 @@ Rscript_path: "Rscript"
   # ------ 可选流程开关 ------
   do_cluster: true          # 运行 cluster 绘图及差异/富集
   do_refmarker: true        # 运行参考 marker 绘图
+  refmarker_file: ""        # 若 do_refmarker 为true，提供包含 CellType 和 Markers 列的 TSV/CSV 文件画点阵图
   do_annotation: true       # 仅添加注释
   do_celltype: true         # 运行 celltype UMAP 和比例图
   do_celltype_de: false     # 运行细胞类型差异与富集（可选）
   annotated_rds: ""         # 直接读取已有注释 rds（可选，用于跳过 do_annotation）
+  
+  # ------ 富集物种配置 ------
+  orgdb: ""                 # (针对人/鼠外物种)自定义富集orgdb，例如 "org.Rn.eg.db"，默认为空利用推断
+  organism_kegg: ""         # (针对人/鼠外物种)自定义富集kegg简称，例如 "rno"
   
   # ------ 多格式导出 & 报告渲染环境 ------
   # Seurat 对象默认同时导出 rds / h5ad / cloupe
@@ -150,6 +155,4 @@ Database_Info:
   tissue_type: "Heart"            # 组织类型英文
   tissue_type_zh: "心脏"           # 组织类型中文
   analyst: "shaoyusong"        # 分析人
-  orgdb: ""                       # (针对人/鼠外物种)自定义富集orgdb，例如 "org.Rn.eg.db"
-  organism_kegg: ""               # (针对人/鼠外物种)自定义富集kegg简称，例如 "rno"
   notes: "这里是填写的实验或送样注意事项，比如含有较多破裂细胞请专家在亚群谨慎对待..."  
