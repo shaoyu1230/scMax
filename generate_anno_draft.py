@@ -137,8 +137,14 @@ def generate_draft(markers_file, config_file, output_file, top_n=10):
         
     draft_rows = []
     
-    # 按 p_val_adj 排序以防它没有排序
+    # 过滤 p_val_adj < 0.05 并按 cluster 以及 avg_log2FC 降序排列
     if 'p_val_adj' in df_markers.columns:
+        df_markers = df_markers[df_markers['p_val_adj'] < 0.05]
+        
+    if 'avg_log2FC' in df_markers.columns:
+        df_markers = df_markers.sort_values(by=['cluster', 'avg_log2FC'], ascending=[True, False])
+    elif 'p_val_adj' in df_markers.columns:
+        # 兼容备用：如果没有 log2FC 但有 p_val_adj，则依显著性排序
         df_markers = df_markers.sort_values(by=['cluster', 'p_val_adj'])
         
     clusters = df_markers['cluster'].unique()
@@ -187,7 +193,7 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--input_markers", required=True, help="集群特异基因文件 (一般为 03或04的 markers.csv)")
     parser.add_argument("-c", "--config", required=True, help="YAML 配置文件路径")
     parser.add_argument("-o", "--output", required=True, help="输出草稿名，如: my_draft_anno.xlsx")
-    parser.add_argument("-n", "--topn", type=int, default=15, help="取前多少个差异基因用来跟库里的比对，默认 15 个")
+    parser.add_argument("-n", "--topn", type=int, default=30, help="取每个集群符合条件(p<0.05, 排序靠前)的前多少个基因用来比对，默认 30 个")
     
     args = parser.parse_args()
     
