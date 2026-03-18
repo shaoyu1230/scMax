@@ -7,6 +7,9 @@
 # 例如: "/path/to/miniconda3/envs/sc_env/bin/Rscript"
 Rscript_path: "Rscript"
 
+# 分析总输出根目录（如目录不存在将自动创建）
+global_outdir: "/Users/angela/Documents/00_annoroad/06_Development/scMax/test_output_v2"
+
 01_scQC:
   run: true
   

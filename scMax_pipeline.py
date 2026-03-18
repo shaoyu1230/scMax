@@ -2,14 +2,21 @@ import yaml
 import argparse
 import os
 
-def generate_bash_script(config_file, outdir):
+def generate_bash_script(config_file, script_outdir):
     with open(config_file, 'r', encoding='utf-8') as f:
         config = yaml.safe_load(f)
+    
+    # 建立生成 bash 投递脚本的目录
+    os.makedirs(script_outdir, exist_ok=True)
+    
+    # 从 config 中独取实际的分析落地主目录
+    global_outdir = config.get("global_outdir", "./scMax_Out")
+    os.makedirs(global_outdir, exist_ok=True)
     
     script_content = "#!/bin/bash\n\n"
     script_content += "set -e\n\n"
     script_content += f"echo 'Starting scMax Pipeline with config: {config_file}'\n"
-    script_content += f"OUTDIR={outdir}\n"
+    script_content += f"OUTDIR={global_outdir}\n"
     script_content += f"mkdir -p $OUTDIR\n\n"
     
     # 获取 Rscript 环境路径，默认使用系统环境里的 Rscript
@@ -308,17 +315,18 @@ python3 {os.path.join(base_dir, "scMax_db_manager.py")} -c '{os.path.abspath(con
 '''
     script_content += "\necho 'scMax Pipeline completed successfully!'\n"
     
-    sh_file = os.path.join(outdir, "run_scMax_pipeline.sh")
+    sh_file = os.path.join(script_outdir, "run_scMax_pipeline.sh")
     with open(sh_file, "w", encoding='utf-8') as f:
         f.write(script_content)
     os.chmod(sh_file, 0o755)
     
-    print(f"生成的 bash 脚本保存在: {sh_file}")
+    print(f"生成的 bash 分析脚本已保存在投递口: {sh_file}")
+    print(f"后台数据的实际归档将送往: {global_outdir}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="生成 scMax 分析流程的 bash 脚本")
     parser.add_argument("-c", "--config", required=True, help="YAML 配置文件")
-    parser.add_argument("-o", "--outdir", required=True, help="输出目录")
+    parser.add_argument("-o", "--outdir", required=True, help="生成的 bash 运行脚本所存放的目录位置")
     args = parser.parse_args()
     
     generate_bash_script(args.config, args.outdir)
