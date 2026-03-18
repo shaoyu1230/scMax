@@ -179,10 +179,6 @@ def generate_bash_script(config_file, script_outdir):
     subcluster_conf = config.get("04_subcluster", {})
     if subcluster_conf.get("run", False):
         script_dir = os.path.join(base_dir, "04_subcluster", "script")
-        subcluster_out = os.path.join("$OUTDIR", "04_subcluster_out")
-        script_content += f"if [ -d {subcluster_out} ]; then rm -rf {subcluster_out}; fi\n"
-        script_content += f"mkdir -p {subcluster_out}\n"
-        
         user_rds = subcluster_conf.get("rdsfile", "")
         # 如果亚群挖掘未指明提取的母体文件，则尝试延续上一环节最后输出的一份
         if user_rds:
@@ -190,6 +186,13 @@ def generate_bash_script(config_file, script_outdir):
             
         subset_col = subcluster_conf.get("subset_col", "res0.4")
         subset_val = str(subcluster_conf.get("subset_val", ""))
+        
+        # 优化目录结构：带上有标识性的子群参数作为文件夹名称防覆盖
+        safe_val_name = subset_val.replace(",", "_").replace(" ", "") if subset_val else "unknown"
+        subcluster_out = os.path.join("$OUTDIR", f"04_subcluster_{safe_val_name}")
+        
+        script_content += f"if [ -d {subcluster_out} ]; then rm -rf {subcluster_out}; fi\n"
+        script_content += f"mkdir -p {subcluster_out}\n"
         methods = subcluster_conf.get("methods", "re_harmony,original_integrated")
         resolutions = str(subcluster_conf.get("resolutions", "0.2,0.4"))
         col_sample = subcluster_conf.get("col_sample", "Sample")
@@ -228,8 +231,12 @@ def generate_bash_script(config_file, script_outdir):
     script_content += "#" + "="*40 + "\n"
     celltype_conf = config.get("05_celltype", {})
     if celltype_conf.get("run", False):
+        db_conf = config.get("Database_Info", {})
+        anno_level = db_conf.get("annotation_level", "MajorType").replace(" ", "_").replace("-", "_")
+        
         script_dir = os.path.join(base_dir, "05_celltype", "script")
-        celltype_out = os.path.join("$OUTDIR", "05_celltype_out")
+        celltype_out = os.path.join("$OUTDIR", f"05_annotation_{anno_level}")
+        
         script_content += f"if [ -d {celltype_out} ]; then rm -rf {celltype_out}; fi\n"
         script_content += f"mkdir -p {celltype_out}\n"
         
