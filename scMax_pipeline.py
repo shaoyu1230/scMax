@@ -248,54 +248,56 @@ def generate_bash_script(config_file, script_outdir):
         annofile = celltype_conf.get("annofile", "")
         louper_path = celltype_conf.get("louper_path", "")
         
-        if not annofile:
-            script_content += "echo 'Error: 启用 05_celltype 但未传入映射注释表(annofile)！'\n"
+        # === 可选参数提前读取 ===
+        do_cluster = celltype_conf.get("do_cluster", True)
+        do_refmarker = celltype_conf.get("do_refmarker", True)
+        do_annotation = celltype_conf.get("do_annotation", True)
+        do_celltype = celltype_conf.get("do_celltype", True)
+        do_celltype_de = celltype_conf.get("do_celltype_de", False)
+        
+        if do_annotation and not annofile:
+            script_content += "echo 'Error: 启用 do_annotation 注释阶段但未传入映射注释表(annofile)！'\n"
+            script_content += "exit 1\n\n"
+            
+        # === 直接调用分析脚本（不依赖 Makefile），读取主 YAML 配置 ===
+        cmd = f"{rscript_cmd} {script_dir}/scCellType.R --config '{config_file}' --outdir {celltype_out} --inputrds '{next_input_rds}'\n\n"
+        
+        # Seurat 对象多格式输出：rds / cloupe / h5ad
+        cmd += f"{rscript_cmd} -e \"suppressMessages(library(SeuratDisk)); data <- readRDS('{celltype_out}/Rdata/Data-Annotation_CellType.rds'); SaveH5Seurat(data, filename = '{celltype_out}/Data_CellAnnotated.h5Seurat', overwrite=TRUE); Convert('{celltype_out}/Data_CellAnnotated.h5Seurat', dest = 'h5ad', overwrite=TRUE); unlink('{celltype_out}/Data_CellAnnotated.h5Seurat')\"\n"
+        
+        louper_arg = f" --louper_path '{louper_path}'" if louper_path else ""
+        cmd += f"{rscript_cmd} {script_dir}/rds2cloupe.R -i {celltype_out}/Rdata/Data-Annotation_CellType.rds -o {celltype_out} -n Data_CellAnnotated_Cloupe{louper_arg}\n\n"
+        
+        # === 动态组装 HTML 报告 ===
+        python_path = celltype_conf.get("python_path", "python3")
+        jupyter_path = celltype_conf.get("jupyter_path", "jupyter")
+        
+        cmd += "# >>> 自动化组装动态可视化报告 <<<\n"
+        dyn_args = f"--outdir {celltype_out}"
+        if do_cluster: dyn_args += " --do_cluster"
+        if do_refmarker: dyn_args += " --do_refmarker"
+        if do_annotation: dyn_args += " --do_annotation"
+        if do_celltype: dyn_args += " --do_celltype"
+        if do_celltype_de: dyn_args += " --do_celltype_de"
+            
+        # 检测并传递无分组标记
+        col_group_check = celltype_conf.get("col_group", "").strip()
+        if not col_group_check or col_group_check.lower() == "none" or col_group_check == "NA":
+            dyn_args += " --no_group"
+        
+        do_report = celltype_conf.get("do_report", True)
+        if do_report:
+            cmd += f"{python_path} {script_dir}/generate_dynamic_report.py {dyn_args}\n"
+            cmd += f"cd {celltype_out} && {jupyter_path} nbconvert --no-input --template pj --to html report_custom.ipynb && mv report_custom.html CellType.Annotation_report.html\n\n"
         else:
-            # === 直接调用分析脚本（不依赖 Makefile），读取主 YAML 配置 ===
-            cmd = f"{rscript_cmd} {script_dir}/scCellType.R --config '{config_file}' --outdir {celltype_out} --inputrds '{next_input_rds}'\n\n"
-            
-            # Seurat 对象多格式输出：rds / cloupe / h5ad
-            cmd += f"{rscript_cmd} -e \"suppressMessages(library(SeuratDisk)); data <- readRDS('{celltype_out}/Rdata/Data-Annotation_CellType.rds'); SaveH5Seurat(data, filename = '{celltype_out}/Data_CellAnnotated.h5Seurat', overwrite=TRUE); Convert('{celltype_out}/Data_CellAnnotated.h5Seurat', dest = 'h5ad', overwrite=TRUE); unlink('{celltype_out}/Data_CellAnnotated.h5Seurat')\"\n"
-            
-            louper_arg = f" --louper_path '{louper_path}'" if louper_path else ""
-            cmd += f"{rscript_cmd} {script_dir}/rds2cloupe.R -i {celltype_out}/Rdata/Data-Annotation_CellType.rds -o {celltype_out} -n Data_CellAnnotated_Cloupe{louper_arg}\n\n"
-            
-            # === 动态组装 HTML 报告 ===
-            do_cluster = celltype_conf.get("do_cluster", True)
-            do_refmarker = celltype_conf.get("do_refmarker", True)
-            do_annotation = celltype_conf.get("do_annotation", True)
-            do_celltype = celltype_conf.get("do_celltype", True)
-            do_celltype_de = celltype_conf.get("do_celltype_de", False)
-            
-            python_path = celltype_conf.get("python_path", "python3")
-            jupyter_path = celltype_conf.get("jupyter_path", "jupyter")
-            
-            cmd += "# >>> 自动化组装动态可视化报告 <<<\n"
-            dyn_args = f"--outdir {celltype_out}"
-            if do_cluster: dyn_args += " --do_cluster"
-            if do_refmarker: dyn_args += " --do_refmarker"
-            if do_annotation: dyn_args += " --do_annotation"
-            if do_celltype: dyn_args += " --do_celltype"
-            if do_celltype_de: dyn_args += " --do_celltype_de"
-            
-            # 检测并传递无分组标记
-            col_group_check = celltype_conf.get("col_group", "").strip()
-            if not col_group_check or col_group_check.lower() == "none" or col_group_check == "NA":
-                dyn_args += " --no_group"
-            
-            do_report = celltype_conf.get("do_report", True)
-            if do_report:
-                cmd += f"{python_path} {script_dir}/generate_dynamic_report.py {dyn_args}\n"
-                cmd += f"cd {celltype_out} && {jupyter_path} nbconvert --no-input --template pj --to html report_custom.ipynb && mv report_custom.html CellType.Annotation_report.html\n\n"
-            else:
-                cmd += "# do_report 为 false，跳过动态图文 HTML 分析报告渲染阶段\n\n"
-                 
-            script_content += cmd
-            # 记录最终挂载位置供入库
-            global_final_umap = str(os.path.join(celltype_out, "annotation", "CellType_All", "1_CellType.UMAP.png"))
-            global_final_html = str(os.path.join(celltype_out, "CellType.Annotation_report.html"))
-            global_final_fraction = str(os.path.join(celltype_out, "celltype_fraction", "2_CellType_Keep.in.Sample-bar.png"))
-            global_final_anno_table = str(os.path.join(celltype_out, "annotation", "CellType_All", "0_Cluster-CellType.anno.xls"))
+            cmd += "# do_report 为 false，跳过动态图文 HTML 分析报告渲染阶段\n\n"
+             
+        script_content += cmd
+        # 记录最终挂载位置供入库
+        global_final_umap = str(os.path.join(celltype_out, "annotation", "CellType_All", "1_CellType.UMAP.png"))
+        global_final_html = str(os.path.join(celltype_out, "CellType.Annotation_report.html"))
+        global_final_fraction = str(os.path.join(celltype_out, "celltype_fraction", "2_CellType_Keep.in.Sample-bar.png"))
+        global_final_anno_table = str(os.path.join(celltype_out, "annotation", "CellType_All", "0_Cluster-CellType.anno.xls"))
 
     else:
         script_content += "# Skip 05_celltype\n\n"
