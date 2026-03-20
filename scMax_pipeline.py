@@ -328,7 +328,31 @@ python3 {os.path.join(base_dir, "scMax_db_manager.py")} -c '{os.path.abspath(con
 '''
     script_content += "\necho 'scMax Pipeline completed successfully!'\n"
     
-    sh_file = os.path.join(script_outdir, "run_scMax_pipeline.sh")
+    run_steps = []
+    if (config.get("01_scQC") or config.get("scQC", {})).get("run", True):
+        run_steps.append("01")
+    if config.get("02_filter", {}).get("run", True):
+        run_steps.append("02")
+    if config.get("03_cluster", {}).get("run", True):
+        run_steps.append("03")
+    if config.get("04_subcluster", {}).get("run", False):
+        run_steps.append("04")
+    celltype_conf = config.get("05_celltype", {})
+    if celltype_conf.get("run", False):
+        sub_opts = []
+        if celltype_conf.get("do_cluster", True): sub_opts.append("clus")
+        if celltype_conf.get("do_refmarker", True): sub_opts.append("refm")
+        if celltype_conf.get("do_annotation", True): sub_opts.append("anno")
+        if celltype_conf.get("do_celltype", True): sub_opts.append("ctype")
+        if celltype_conf.get("do_celltype_de", False): sub_opts.append("de")
+        
+        if sub_opts:
+            run_steps.append("05_" + "-".join(sub_opts))
+        else:
+            run_steps.append("05")
+        
+    step_suffix = "_" + "_".join(run_steps) if run_steps else ""
+    sh_file = os.path.join(script_outdir, f"run_scMax_pipeline{step_suffix}.sh")
     with open(sh_file, "w", encoding='utf-8') as f:
         f.write(script_content)
     os.chmod(sh_file, 0o755)
