@@ -107,19 +107,23 @@ def main():
         if args.no_group:
             cells.append(create_markdown_cell([
                 "（2）统计Cluster中每个细胞中的nCount_RNA（number of UMI），nFeature_RNA（number of Gene）和percent.mt（线粒体基因占nFeature_RNA的比例），将统计结果用小提琴图展示：",
+                "",
                 "<img src=\"cluster_characterization/0_QC.png\" alt=\"质控\" width=\"500\">",
                 "<p style=\"font-size: 12px;\">注：小提琴图的横坐标代表样本，从上至下分别为unique UMI总数、基因表达数目和线粒体基因比例的结果。</p>",
                 "",
                 "（3）将样本分布映射到UMAP上，展示整体分布以及各样本分布情况：",
+                "",
                 "<img src=\"cluster_characterization/1_Sample.UMAP.png\" alt=\"样本\" width=\"600\">"
             ]))
         else:
             cells.append(create_markdown_cell([
                 "（2）统计Cluster中每个细胞中的nCount_RNA（number of UMI），nFeature_RNA（number of Gene）和percent.mt（线粒体基因占nFeature_RNA的比例），将统计结果用小提琴图展示：",
+                "",
                 "<img src=\"cluster_characterization/0_QC.png\" alt=\"质控\" width=\"500\">",
                 "<p style=\"font-size: 12px;\">注：小提琴图的横坐标代表样本，从上至下分别为unique UMI总数、基因表达数目和线粒体基因比例的结果。</p>",
                 "",
                 "（3）将样本分布映射到UMAP上，展示整体分布以及各样本分布情况：",
+                "",
                 "<table>",
                 "  <tr>",
                 "    <td><img src=\"cluster_characterization/1_Sample.UMAP.png\" alt=\"样本\" width=\"400\"></td>",
@@ -129,6 +133,7 @@ def main():
                 "<p style=\"font-size: 12px;\">注：左图为分样本UMAP结果图，不同颜色代表不同的样本，右图分别展示不同样本的UMAP结果图，不同颜色代表不同的Cluster。</p>",
                 "",
                 "（4）将分组细胞映射到UMAP上，展示整体分布及各组分布情况：",
+                "",
                 "<table>",
                 "  <tr>",
                 "    <td><img src=\"cluster_characterization/1_Group.UMAP.png\" alt=\"分组\" width=\"400\"></td>",
@@ -142,6 +147,7 @@ def main():
             "## 1.2 细胞群数量和比例统计",
             "",
             "（1）统计样本中各Cluster细胞数量和比例，绘制数量和比例分布热图：",
+            "",
             "<table>",
             "  <tr>",
             "    <td><img src=\"cluster_characterization/3_Count-seurat_clusters.in.Sample-heatmap.png\" alt=\"图片1\" width=\"400\"></td>",
@@ -154,12 +160,14 @@ def main():
         if args.no_group:
             cells.append(create_markdown_cell([
                 "（2）统计样本中各Cluster细胞占比绘制比例柱状图和趋势图：",
+                "",
                 "<img src=\"cluster_characterization/3_Frac-seurat_clusters.in.Sample-bar.png\" alt=\"图1 构成\" width=\"600\">",
                 "<p style=\"font-size: 12px;\">注：每个样本中各Cluster的细胞百分比堆积柱形图和趋势图，横轴为样本名，纵轴为同一样本中不同Cluster的细胞百分比。</p>"
             ]))
         else:
             cells.append(create_markdown_cell([
                 "（2）统计样本中各Cluster细胞占比绘制比例柱状图和趋势图：",
+                "",
                 "<table>",
                 "  <tr>",
                 "    <td><img src=\"cluster_characterization/3_Frac-seurat_clusters.in.Sample-bar.png\" alt=\"图片1\" width=\"400\"></td>",
@@ -169,6 +177,7 @@ def main():
                 "<p style=\"font-size: 12px;\">注：每个样本中各Cluster的细胞百分比堆积柱形图和趋势图，横轴为样本名，纵轴为同一样本中不同Cluster的细胞百分比。</p>",
                 "",
                 "（3）统计分组中各Cluster细胞占比绘制比例柱状图，如下：",
+                "",
                 "<table>",
                 "  <tr>",
                 "    <td><img src=\"cluster_characterization/3_Frac-seurat_clusters.in.Group-bar.png\" alt=\"图片1\" width=\"400\"></td>",
@@ -184,6 +193,7 @@ def main():
             "聚类分析得到了不同的细胞群，为了进一步研究每个细胞群的特征，使用Seurat包的FindAllMarkers函数进行了细胞群差异基因分析。差异基因分析过程如下（以Cluster1为例）：计算Cluster1中某个基因的平均表达量；计算所有Cluster中除了Cluster1的对应基因的平均表达量；采用wilcox统计方法进行显著性检验。显著差异基因筛选的标准为：min.pct>=0.10，avg_log2FC>=0.25，p_val_adj<0.05。",
             "",
             "（1）统计每个细胞群中的Marker基因；（2）绘制各细胞群Top10差异基因气泡图：",
+            "",
             "<img src=\"cluster_characterization/4_Cluster.DE/2_ClusterTop10DEGs.png\" alt=\"Markdown Logo\" width=\"1000\">",
             "<p style=\"font-size: 12px;\">注：选择所有聚类（Cluster）中avg_log2FC数值top10的marker基因（去重后），绘制在不同Cluster中的表达量dotplot图。  ",
             "横轴为不同基因，纵轴为聚类（Cluster）。点的颜色表示表达量高低，从蓝到红表示表达量从低到高，即越红表示表达量越高。点的大小表示某Cluster中有该基因表达的细胞占比，点越大，说明细胞占比越高。</p>",
@@ -192,6 +202,7 @@ def main():
             "取各细胞群中显著差异（p_val_adj<0.05，avg_log2FC>=0.25，pct.1>=0.1）的基因，使用clusterProfiler包进行富集分析。报告中以Cluster1为例（可在 5_Enrich 目录查看全集）：",
             "",
             "（1）GO富集分析结果：",
+            "",
             "<table>",
             "  <tr>",
             "    <td><img src=\"cluster_characterization/5_Enrich/1.up.GO_bar.png\" alt=\"图片1\" width=\"400\"></td>",
@@ -214,6 +225,7 @@ def main():
             "<p style=\"font-size: 12px;\">注：客户提供的Marker基因在不同Cluster中表达量的dotplot热图，横轴为聚类（Cluster），纵轴右侧标签为基因，纵轴左侧标签为Marker基因所属的细胞类型。点/方块的颜色表示表达量高低，从蓝到红表示表达量从低到高，即越红表示表达量越高。点的大小表示某Cluster中有该基因表达的细胞占比，点越大，说明有表达的细胞占比越高。</p>",
             "",
             "（2）绘制Marker基因表达UMAP图，可直观得看到基因整体表达情况：",
+            "",
             "<img src=\"marker_expression_in_cluster/2_FeaturePlot.example.png\" alt=\"FeaturePlot\" width=\"500\">",
             "<p style=\"font-size: 12px;\">注：客户提供的Marker基因在不同Cluster中表达量的feature plot图。红色代表高表达，蓝色代表低表达。</p>"
         ]))
@@ -227,10 +239,12 @@ def main():
             "",
             "## 3.1 所有细胞类型注释结果",
             "细胞Cluster注释结果及参考marker信息如下表（仅示例图）：",
+            "",
             "<img src=\"annotation/CellType_All/0_Cluster-CellType.anno.png\" alt=\"Anno Table\" width=\"600\">"
         ]))
         cells.append(create_markdown_cell([
             "（1）将细胞Cluster加上细胞类型注释信息，获得所有细胞类型注释结果：",
+            "",
             "<table>",
             "  <tr>",
             "    <td><img src=\"annotation/CellType_All/1_CellType.UMAP-blank.png\" alt=\"全覆盖注释\" width=\"400\"></td>",
@@ -238,6 +252,7 @@ def main():
             "  </tr>",
             "</table>",
             "（2）将样本/分组信息映射到UMAP上，展示其分布情况：",
+            "",
             "<img src=\"annotation/CellType_All/2_Sample.UMAP-split.png\" alt=\"Sample\" width=\"1000\">",
             "<img src=\"annotation/CellType_All/2_Group.UMAP-split.png\" alt=\"Group\" width=\"1000\">",
             "<p style=\"font-size: 12px;\">注：注释后的细胞UMAP图谱，不同颜色代表不同的细胞/样本/分组。</p>"
@@ -245,6 +260,7 @@ def main():
         cells.append(create_markdown_cell([
             "## 3.2 高质量细胞类型注释结果",
             "去除部分不展示的细胞，比如双胞（Doublets）、低质量细胞（Low quality cells）等，得到高质量细胞类型数据。",
+            "",
             "<table>",
             "  <tr>",
             "    <td><img src=\"annotation/CellType_Keep/1_CellType.UMAP-blank.png\" alt=\"全覆盖注释\" width=\"400\"></td>",
@@ -258,10 +274,12 @@ def main():
             "分析细胞类型定义所使用的主要Marker基因在注释好的细胞群中的表达情况，用于验证注释的准确性，以及Marker的特异性。",
             "",
             "（1）绘制气泡图，展示Marker基因的表达水平及在细胞类型中表达比例：",
+            "",
             "<img src=\"annotation/CellType_Keep/4_CellType.dotplot.png\" alt=\"AnnoDot\" width=\"600\">",
             "<p style=\"font-size: 12px;\">注：细胞类型定义使用的Marker基因在不同细胞类型中表达量的dotplot图，纵轴为定义的细胞类型，横轴为基因名。</p>",
             "",
             "（2）绘制热图，展示细胞类型中Marker基因的表达水平：",
+            "",
             "<img src=\"annotation/CellType_Keep/3_CellType.heatmap.png\" alt=\"AnnoHeat\" width=\"600\">"
         ]))
         
@@ -286,11 +304,13 @@ def main():
         if args.no_group:
             cells.append(create_markdown_cell([
                 "统计样本中各细胞类型的占比绘制比例分类图：",
+                "",
                 "<img src=\"celltype_fraction/2_CellType_Keep.in.Sample-bar.png\" alt=\"样本组成\" width=\"600\">"
             ]))
         else:
             cells.append(create_markdown_cell([
                 "统计样本/分组中各细胞类型的占比绘制比例分类图及趋势图：",
+                "",
                 "<table>",
                 "  <tr>",
                 "    <td><img src=\"celltype_fraction/2_CellType_Keep.in.Sample-bar.png\" alt=\"样本组成\" width=\"400\"></td>",
@@ -299,6 +319,7 @@ def main():
                 "</table>",
                 "## 4.2 细胞类型偏好性分析（Ro/e）",
                 "Ro/e（the ratio of observed over expected cell numbers）是一种用于评估细胞亚群在组织或分组中分布偏好性的统计学方法（大于1为表现出富集关联）：",
+                "",
                 "<img src=\"celltype_fraction/3_CellType_Keep.in.Group-Roe.png\" alt=\"Roe\" width=\"400\">",
                 "<p style=\"font-size: 12px;\">注：横轴为细胞群名称，纵轴为组织类型，颜色代表Ro/e值。</p>"
             ]))
@@ -315,10 +336,12 @@ def main():
         ]))
         cells.append(create_markdown_cell([
             "展示各细胞群Top5差异基因与热图：",
+            "",
             "<img src=\"celltype_characterization/1_CellType_DE/3_CellType.Top5DEGs.png\" alt=\"大类Top\" width=\"800\">",
             "<img src=\"celltype_characterization/1_CellType_DE/2_CellType.Top5DEGs-heatmap.png\" alt=\"TopHeatmap\" width=\"500\">",
             "## 5.2 细胞类型特征基因富集分析",
             "取各细胞类型中avg_log2FC数值Top100的基因，使用clusterProfiler包进行GO与KEGG富集分析：",
+            "",
             "<table>",
             "  <tr>",
             "    <td><img src=\"celltype_characterization/2_CellType_Enrich/2_CellType.GO.png\" alt=\"GO\" width=\"450\"></td>",
@@ -331,6 +354,7 @@ def main():
     cells.append(create_markdown_cell([
         "# 结果文件目录结构与软件声明",
         "",
+        "```text",
         "├── cluster_characterization         cluster特征：包括cluster分布，样本/分组分布，cluster占比等",
         "├── marker_expression_in_cluster                参考marker表达绘图",
         "├── annotation                       细胞类型注释结果",
@@ -339,8 +363,10 @@ def main():
         "├── celltype_fraction                细胞占比分析",
         "├── celltype_characterization        细胞类型特征，包括差异分析和富集分析",
         "└── CellType.Annotation_report.html    细胞类型注释报告",
+        "```",
         "",
         "本次分析所使用的核心软件：",
+        "",
         "| 软件名称            | 版本号    | 功能描述                              |",
         "|---------------------|-----------|---------------------------------------|",
         "| R                   | 4.3.1     | R语言软件                             |",
