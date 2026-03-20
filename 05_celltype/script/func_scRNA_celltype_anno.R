@@ -517,6 +517,7 @@ anno_mks_plot1 <- function(data,annofile,celltype_col="CellType",celltype.levels
   ht <- max(length(unique(df_unique$Markers))*0.3,10)
   ggsave(paste0(outdir,"/3_CellType.dotplot.clusterAnno.pdf"),width=wd,height=ht)
   ggsave(paste0(outdir,"/3_CellType.dotplot.clusterAnno.png"),width=wd,height=ht)
+  mks <- unique(df_unique$Markers)
   # dotplot, by seurat_clusters
   DotPlot(data,features =unique(df_unique$Markers),group.by="seurat_clusters")+ #coord_flip()+
     scale_colour_gradientn(colours = c("dodgerblue1","#44c1f0", "lightgoldenrod","#e20612",'#cc340c'))+
@@ -531,7 +532,6 @@ anno_mks_plot1 <- function(data,annofile,celltype_col="CellType",celltype.levels
     scale_colour_gradientn(colours = c("dodgerblue1","#44c1f0", "lightgoldenrod","#e20612",'#cc340c'))+
     geom_point(aes(size=pct.exp), shape = 21, colour="black", stroke=0.2)+
     theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5),axis.title=element_blank())
-  mks <- unique(df_unique$Markers)
   wd <- max(ceiling(length(mks)/3),9)
   ht <- max(length(unique(data@meta.data[,celltype_col]))*0.4,5)
   ggsave(paste0(outdir,"/4_CellType.dotplot.png"),width=wd,height=ht)
