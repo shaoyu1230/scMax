@@ -96,19 +96,19 @@ def main():
         return matches[0] if matches else ""
         
     # 优先找 Keep，如果没有再找 All (放宽匹配前缀以兼容 seurat_clusters 和 CellType)
-    umap_path = find_file('**/*annotation/CellType_Keep/*.UMAP-blank.png')
+    umap_path = find_file('annotation/CellType_Keep/*.UMAP-blank.png')
     if not umap_path:
-        umap_path = find_file('**/*annotation/CellType_All/*.UMAP-blank.png')
+        umap_path = find_file('annotation/CellType_All/*.UMAP-blank.png')
 
     # 细胞占比图
-    fraction_path = find_file('**/*celltype_fraction/*Keep.in.Sample-bar.png')
+    fraction_path = find_file('celltype_fraction/*Keep.in.Sample-bar.png')
     if not fraction_path:
-        fraction_path = find_file('**/*celltype_fraction/*All.in.Sample-bar.png')
+        fraction_path = find_file('celltype_fraction/*All.in.Sample-bar.png')
 
-    marker_table_path = find_file('**/*annotation/CellType_All/*Cluster-CellType.anno.xls')
+    marker_table_path = find_file('annotation/CellType_All/*Cluster-CellType.anno.xls')
 
-    # HTML 报告 (在 pipeline 中最终会被重命名)
-    report_path = find_file('**/*CellType.Annotation_report.html')
+    # HTML 报告 (在 pipeline 中最终会被重命名跑在 outdir 根目录)
+    report_path = find_file('*CellType.Annotation_report.html')
     
     # === 开始独立图床静态文件备份复制过程 ===
     webui_dir = os.path.dirname(os.path.abspath(db_path))
