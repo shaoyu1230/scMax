@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, g, send_file
 import sqlite3
 import os
+from urllib.parse import urlparse, parse_qs
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'scmax_secret_ui'
@@ -85,6 +86,26 @@ def view_report():
     if path and os.path.exists(path):
         return send_file(path)
     return "Report not found (Source and backup may be deleted)", 404
+
+@app.route('/<path:filename>')
+def serve_report_assets(filename):
+    """
+    用于拦截网页报告（HTML）内部加载本地相对路径图片时引发的 404 请求。
+    通过读取 HTTP Referer 头来溯源当前正在打开的报告文件位置，并拼接触发该请求的静态图片路径。
+    """
+    referer = request.headers.get('Referer')
+    if referer:
+        parsed_url = urlparse(referer)
+        query_params = parse_qs(parsed_url.query)
+        for arg in ['path', 'bk_path']:
+            if arg in query_params:
+                report_path = query_params[arg][0]
+                if os.path.exists(report_path):
+                    report_dir = os.path.dirname(report_path)
+                    asset_path = os.path.join(report_dir, filename)
+                    if os.path.exists(asset_path):
+                        return send_file(asset_path)
+    return "Asset not found", 404
 
 if __name__ == '__main__':
     # 供本地直接调试用，生产可由 wsgi 启动
