@@ -48,48 +48,39 @@
     <!-- 物种分布 -->
     <div class="col-md-4">
         <div class="card shadow-sm h-100 border-0">
-            <div class="card-header bg-white fw-bold text-secondary border-bottom" style="font-size: 0.85rem">物种分布概貌 (Top 5)</div>
-            <div class="card-body py-2">
-                {% for item in stats.species_dist %}
-                <div class="d-flex justify-content-between align-items-center mb-1 border-bottom pb-1">
-                    <span class="small">{{ item.name }}</span>
-                    <span class="badge bg-secondary rounded-pill">{{ item.cnt }} 项</span>
-                </div>
+            <div class="card-header bg-white fw-bold text-secondary border-bottom" style="font-size: 0.85rem">物种分布概貌 (词云)</div>
+            <div class="card-body py-2 d-flex justify-content-center align-items-center" style="min-height: 180px;">
+                {% if stats.species_dist %}
+                <div id="wc-species" style="width: 100%; height: 180px;"></div>
                 {% else %}
                 <div class="text-muted small">暂无数据</div>
-                {% endfor %}
+                {% endif %}
             </div>
         </div>
     </div>
     <!-- 组织分布 -->
     <div class="col-md-4">
         <div class="card shadow-sm h-100 border-0">
-            <div class="card-header bg-white fw-bold text-secondary border-bottom" style="font-size: 0.85rem">攻坚组织器官 (Top 5)</div>
-            <div class="card-body py-2">
-                {% for item in stats.tissue_dist %}
-                <div class="d-flex justify-content-between align-items-center mb-1 border-bottom pb-1">
-                    <span class="small">{{ item.name }}</span>
-                    <span class="badge bg-secondary rounded-pill">{{ item.cnt }} 项</span>
-                </div>
+            <div class="card-header bg-white fw-bold text-secondary border-bottom" style="font-size: 0.85rem">攻坚组织器官 (词云)</div>
+            <div class="card-body py-2 d-flex justify-content-center align-items-center" style="min-height: 180px;">
+                {% if stats.tissue_dist %}
+                <div id="wc-tissue" style="width: 100%; height: 180px;"></div>
                 {% else %}
                 <div class="text-muted small">暂无数据</div>
-                {% endfor %}
+                {% endif %}
             </div>
         </div>
     </div>
     <!-- 疾病分布 -->
     <div class="col-md-4">
         <div class="card shadow-sm h-100 border-0">
-            <div class="card-header bg-white fw-bold text-secondary border-bottom" style="font-size: 0.85rem">关联疾病模型 (Top 5)</div>
-            <div class="card-body py-2">
-                {% for item in stats.disease_dist %}
-                <div class="d-flex justify-content-between align-items-center mb-1 border-bottom pb-1">
-                    <span class="small">{{ item.name }}</span>
-                    <span class="badge bg-secondary rounded-pill">{{ item.cnt }} 项</span>
-                </div>
+            <div class="card-header bg-white fw-bold text-secondary border-bottom" style="font-size: 0.85rem">关联疾病模型 (词云)</div>
+            <div class="card-body py-2 d-flex justify-content-center align-items-center" style="min-height: 180px;">
+                {% if stats.disease_dist %}
+                <div id="wc-disease" style="width: 100%; height: 180px;"></div>
                 {% else %}
                 <div class="text-muted small">暂无数据</div>
-                {% endfor %}
+                {% endif %}
             </div>
         </div>
     </div>
@@ -167,4 +158,77 @@
         </tbody>
     </table>
 </div>
+
+<!-- ECharts & WordCloud -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts-wordcloud@2.1.0/dist/echarts-wordcloud.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        function renderWordCloud(id, data) {
+            var dom = document.getElementById(id);
+            if (!dom) return;
+            var myChart = echarts.init(dom);
+            var option = {
+                tooltip: { show: true },
+                series: [{
+                    type: 'wordCloud',
+                    shape: 'circle',
+                    left: 'center',
+                    top: 'center',
+                    width: '100%',
+                    height: '100%',
+                    right: null,
+                    bottom: null,
+                    sizeRange: [14, 40],
+                    rotationRange: [-45, 90],
+                    rotationStep: 45,
+                    gridSize: 8,
+                    drawOutOfBound: false,
+                    textStyle: {
+                        fontFamily: 'sans-serif',
+                        fontWeight: 'bold',
+                        color: function () {
+                            // 随机深沉或鲜艳色彩
+                            return 'rgb(' + [
+                                Math.round(Math.random() * 200),
+                                Math.round(Math.random() * 200),
+                                Math.round(Math.random() * 200)
+                            ].join(',') + ')';
+                        }
+                    },
+                    emphasis: {
+                        focus: 'self',
+                        textStyle: { textShadowBlur: 10, textShadowColor: '#333' }
+                    },
+                    data: data
+                }]
+            };
+            myChart.setOption(option);
+            window.addEventListener('resize', function() {
+                myChart.resize();
+            });
+        }
+
+        var speciesData = [
+            {% for item in stats.species_dist %}
+            { name: "{{ item.name }}", value: {{ item.cnt }} }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        renderWordCloud('wc-species', speciesData);
+
+        var tissueData = [
+            {% for item in stats.tissue_dist %}
+            { name: "{{ item.name }}", value: {{ item.cnt }} }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        renderWordCloud('wc-tissue', tissueData);
+
+        var diseaseData = [
+            {% for item in stats.disease_dist %}
+            { name: "{{ item.name }}", value: {{ item.cnt }} }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        renderWordCloud('wc-disease', diseaseData);
+    });
+</script>
 {% endblock %}
