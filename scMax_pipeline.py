@@ -305,17 +305,6 @@ def generate_bash_script(config_file, script_outdir):
     # --- Step 6: Database Integration ---
     db_conf = config.get("Database_Info", {})
     if db_conf.get("run", False):
-        db_path = db_conf.get("db_path", "/Users/angela/Documents/00_annoroad/06_Development/scMax/WebUI/scMax_projects.db")
-        std_id = db_conf.get("std_project_id", "Unknown")
-        cus_id = db_conf.get("custom_project_id", "Unknown")
-        species = db_conf.get("species", "Unknown")
-        notes = db_conf.get("notes", "")
-        
-        umap_to_record = global_final_umap if celltype_conf.get("run", False) else "NA"
-        html_to_record = global_final_html if celltype_conf.get("run", False) else "NA"
-        fraction_to_record = global_final_fraction if celltype_conf.get("run", False) else "NA"
-        anno_table_to_record = global_final_anno_table if celltype_conf.get("run", False) else "NA"
-        
         script_content += f'''
 # ========================================
 # Execute DB Registration (Central UI)
