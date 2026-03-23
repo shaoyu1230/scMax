@@ -25,19 +25,30 @@ def init_db(db_path):
             species_zh TEXT,
             tissue_type TEXT,
             tissue_type_zh TEXT,
+            disease_type TEXT,
+            seq_tech TEXT,
             analyst TEXT,
             notes TEXT,
             outdir TEXT,
             umap_path TEXT,
             fraction_path TEXT,
             marker_table_path TEXT,
+            anno_png_path TEXT,
             report_path TEXT,
             bk_umap TEXT,
             bk_fraction TEXT,
+            bk_anno_png TEXT,
             bk_report TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    
+    # 动态热更新旧数据库
+    for col in ['disease_type', 'seq_tech', 'anno_png_path', 'bk_anno_png']:
+        try:
+            cursor.execute(f"ALTER TABLE projects ADD COLUMN {col} TEXT")
+        except sqlite3.OperationalError:
+            pass
     
     # 经验沉淀库：marker_experience
     cursor.execute('''
@@ -85,6 +96,8 @@ def main():
     species_zh = db_info.get('species_zh', '')
     tissue_type = db_info.get('tissue_type', '')
     tissue_type_zh = db_info.get('tissue_type_zh', '')
+    disease_type = db_info.get('disease_type', '')
+    seq_tech = db_info.get('seq_tech', '10x scRNA-seq')
     analyst = db_info.get('analyst', '')
     notes = db_info.get('notes', '')
     
@@ -106,6 +119,7 @@ def main():
         fraction_path = find_file('celltype_fraction/*All.in.Sample-bar.png')
 
     marker_table_path = find_file('annotation/CellType_All/*Cluster-CellType.anno.xls')
+    anno_png_path = find_file('annotation/CellType_All/*Cluster-CellType.anno.png')
 
     # HTML 报告 (在 pipeline 中最终会被重命名跑在 outdir 根目录)
     report_path = find_file('*CellType.Annotation_report.html')
@@ -117,6 +131,7 @@ def main():
     
     bk_umap = ""
     bk_fraction = ""
+    bk_anno_png = ""
     bk_report = ""
 
     if umap_path and os.path.exists(umap_path):
@@ -126,6 +141,10 @@ def main():
     if fraction_path and os.path.exists(fraction_path):
         bk_fraction = os.path.join(assets_dir, 'Fraction_bar.png')
         shutil.copy2(fraction_path, bk_fraction)
+        
+    if anno_png_path and os.path.exists(anno_png_path):
+        bk_anno_png = os.path.join(assets_dir, 'Annotation_Table.png')
+        shutil.copy2(anno_png_path, bk_anno_png)
         
     if report_path and os.path.exists(report_path):
         bk_report = os.path.join(assets_dir, 'report.html')
@@ -146,12 +165,12 @@ def main():
     print("[*] Inserting project result record...")
     cursor.execute('''
         INSERT INTO projects (
-            std_project_id, custom_project_id, crm_id, annotation_level, species, species_zh, tissue_type, tissue_type_zh, analyst, notes,
-            outdir, umap_path, fraction_path, marker_table_path, report_path, bk_umap, bk_fraction, bk_report
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            std_project_id, custom_project_id, crm_id, annotation_level, species, species_zh, tissue_type, tissue_type_zh, disease_type, seq_tech, analyst, notes,
+            outdir, umap_path, fraction_path, marker_table_path, anno_png_path, report_path, bk_umap, bk_fraction, bk_anno_png, bk_report
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
-        std_project_id, custom_project_id, crm_id, annotation_level, species, species_zh, tissue_type, tissue_type_zh, analyst, notes,
-        outdir, umap_path, fraction_path, marker_table_path, report_path, bk_umap, bk_fraction, bk_report
+        std_project_id, custom_project_id, crm_id, annotation_level, species, species_zh, tissue_type, tissue_type_zh, disease_type, seq_tech, analyst, notes,
+        outdir, umap_path, fraction_path, marker_table_path, anno_png_path, report_path, bk_umap, bk_fraction, bk_anno_png, bk_report
     ))
     
     # 2. 写入经验库 (解析 marker table)

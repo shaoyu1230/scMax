@@ -158,5 +158,7 @@ Database_Info:
   species_zh: "人"                 # 物种中文信息
   tissue_type: "Heart"            # 组织类型英文
   tissue_type_zh: "心脏"           # 组织类型中文
+  disease_type: "Tumor"           # 疾病类型 (例如: 正常, 肿瘤, 炎症...)
+  seq_tech: "10x scRNA-seq"       # 测序技术平台 (例如: 10x scRNA-seq, BD Rhapsody, Smart-seq2)
   analyst: "shaoyusong"        # 分析人
   notes: "这里是填写的实验或送样注意事项，比如含有较多破裂细胞请专家在亚群谨慎对待..."  

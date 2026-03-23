@@ -34,7 +34,17 @@ def index():
     ''')
     projects = cursor.fetchall()
     
-    # 增加仪表盘大盘概况统计
+    # 增加仪表盘大盘概况统计（分布汇总）
+    cursor.execute('SELECT species_zh, COUNT(*) as cnt FROM projects WHERE species_zh IS NOT NULL AND species_zh != "" GROUP BY species_zh ORDER BY cnt DESC LIMIT 5')
+    species_dist = cursor.fetchall()
+    
+    cursor.execute('SELECT tissue_type_zh, COUNT(*) as cnt FROM projects WHERE tissue_type_zh IS NOT NULL AND tissue_type_zh != "" GROUP BY tissue_type_zh ORDER BY cnt DESC LIMIT 5')
+    tissue_dist = cursor.fetchall()
+    
+    # 因为 disease_type 是新加字段，旧数据可能为 NULL
+    cursor.execute('SELECT disease_type, COUNT(*) as cnt FROM projects WHERE disease_type IS NOT NULL AND disease_type != "" GROUP BY disease_type ORDER BY cnt DESC LIMIT 5')
+    disease_dist = cursor.fetchall()
+
     cursor.execute('SELECT COUNT(DISTINCT custom_project_id), COUNT(DISTINCT species), COUNT(DISTINCT tissue_type) FROM projects')
     proj_row = cursor.fetchone()
     
@@ -45,7 +55,10 @@ def index():
         'projects': proj_row[0] or 0,
         'species': proj_row[1] or 0,
         'tissues': proj_row[2] or 0,
-        'cell_types': cell_row[0] or 0
+        'cell_types': cell_row[0] or 0,
+        'species_dist': [{'name': r[0], 'cnt': r[1]} for r in species_dist],
+        'tissue_dist': [{'name': r[0], 'cnt': r[1]} for r in tissue_dist],
+        'disease_dist': [{'name': r[0], 'cnt': r[1]} for r in disease_dist]
     }
     
     return render_template('index.html', projects=projects, stats=stats, active_page='projects')
