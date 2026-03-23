@@ -14,6 +14,15 @@ def get_db():
     if db is None:
         db = g._database = sqlite3.connect(DB_PATH)
         db.row_factory = sqlite3.Row
+        
+        # 兼容旧数据库，补充新字段
+        cursor = db.cursor()
+        for col in ['disease_type', 'seq_tech', 'anno_png_path', 'bk_anno_png']:
+            try:
+                cursor.execute(f"ALTER TABLE projects ADD COLUMN {col} TEXT")
+            except sqlite3.OperationalError:
+                pass
+        db.commit()
     return db
 
 @app.teardown_appcontext
