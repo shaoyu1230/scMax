@@ -43,15 +43,15 @@ def index():
     ''')
     projects = cursor.fetchall()
     
-    # 增加仪表盘大盘概况统计（分布汇总）
-    cursor.execute('SELECT species_zh, COUNT(*) as cnt FROM projects WHERE species_zh IS NOT NULL AND species_zh != "" GROUP BY species_zh ORDER BY cnt DESC LIMIT 20')
+    # 增加仪表盘大盘概况统计（分布汇总，移除上限，展示全库种类）
+    cursor.execute('SELECT species_zh, COUNT(*) as cnt FROM projects WHERE species_zh IS NOT NULL AND species_zh != "" GROUP BY species_zh ORDER BY cnt DESC')
     species_dist = cursor.fetchall()
     
-    cursor.execute('SELECT tissue_type_zh, COUNT(*) as cnt FROM projects WHERE tissue_type_zh IS NOT NULL AND tissue_type_zh != "" GROUP BY tissue_type_zh ORDER BY cnt DESC LIMIT 20')
+    cursor.execute('SELECT tissue_type_zh, COUNT(*) as cnt FROM projects WHERE tissue_type_zh IS NOT NULL AND tissue_type_zh != "" GROUP BY tissue_type_zh ORDER BY cnt DESC')
     tissue_dist = cursor.fetchall()
     
     # 因为 disease_type 是新加字段，旧数据可能为 NULL
-    cursor.execute('SELECT disease_type, COUNT(*) as cnt FROM projects WHERE disease_type IS NOT NULL AND disease_type != "" GROUP BY disease_type ORDER BY cnt DESC LIMIT 20')
+    cursor.execute('SELECT disease_type, COUNT(*) as cnt FROM projects WHERE disease_type IS NOT NULL AND disease_type != "" GROUP BY disease_type ORDER BY cnt DESC')
     disease_dist = cursor.fetchall()
 
     cursor.execute('SELECT COUNT(DISTINCT custom_project_id), COUNT(DISTINCT species), COUNT(DISTINCT tissue_type) FROM projects')
