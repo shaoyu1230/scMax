@@ -6,7 +6,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'scmax_secret_ui'
 
 # 配置文件中定义的数据库路径
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__name__)), 'WebUI', 'scMax_projects.db')
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scMax_projects.db')
 
 def get_db():
     db = getattr(g, '_database', None)
