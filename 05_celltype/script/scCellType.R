@@ -239,15 +239,8 @@ if(do_annotation){
 
   celltype_umap_plots(data_anno,outdir=paste0(outdir,'/annotation/CellType_All'),celltype_col=celltype_col,groups=plot_groups,palcolor=celltype_colors)
   df <- read.table(annofile,sep='\t',header=TRUE)
-  cols <- c('Cluster','CellType','Markers','reference','description')
-  #判断是否有reference和description列
-  if(!'reference' %in% colnames(df)){
-    cols <- cols[-4]
-  }
-  if(!'description' %in% colnames(df)){
-    cols <- cols[-5]
-  } 
-  df <- df[,cols]
+  cols <- intersect(c('Cluster','CellType','Markers','reference','description'), colnames(df))
+  df <- df[,cols, drop = FALSE]
   png(paste0(outdir,'/annotation/CellType_All/0_Cluster-CellType.anno.png'), width = 2000, height = 1600, res = 150)
   grid.table(df)
   dev.off()
