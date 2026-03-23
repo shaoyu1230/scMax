@@ -119,7 +119,7 @@ def main():
         fraction_path = find_file('celltype_fraction/*All.in.Sample-bar.png')
 
     marker_table_path = find_file('annotation/CellType_All/*Cluster-CellType.anno.xls')
-    anno_png_path = find_file('annotation/CellType_All/*Cluster-CellType.anno.png')
+    anno_png_path = find_file('annotation/CellType_Keep/*CellType.dotplot.png')
 
     # HTML 报告 (在 pipeline 中最终会被重命名跑在 outdir 根目录)
     report_path = find_file('*CellType.Annotation_report.html')
@@ -143,7 +143,7 @@ def main():
         shutil.copy2(fraction_path, bk_fraction)
         
     if anno_png_path and os.path.exists(anno_png_path):
-        bk_anno_png = os.path.join(assets_dir, 'Annotation_Table.png')
+        bk_anno_png = os.path.join(assets_dir, 'DotPlot.png')
         shutil.copy2(anno_png_path, bk_anno_png)
         
     if report_path and os.path.exists(report_path):
