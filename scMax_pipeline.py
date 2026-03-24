@@ -268,17 +268,10 @@ def generate_bash_script(config_file, script_outdir):
         # === 直接调用分析脚本（不依赖 Makefile），读取主 YAML 配置 ===
         cmd = f"{rscript_cmd} {script_dir}/scCellType.R --config '{config_file}' --outdir {celltype_out} --inputrds '{next_input_rds}'\n\n"
         
-        # Seurat 对象多格式输出：rds / cloupe / h5ad
-        cmd += f"{rscript_cmd} -e \"suppressMessages(library(SeuratDisk)); data <- readRDS('{celltype_out}/Rdata/Data-Annotation_CellType.rds'); SaveH5Seurat(data, filename = '{celltype_out}/Data_CellAnnotated.h5Seurat', overwrite=TRUE); Convert('{celltype_out}/Data_CellAnnotated.h5Seurat', dest = 'h5ad', overwrite=TRUE); unlink('{celltype_out}/Data_CellAnnotated.h5Seurat')\"\n"
-        
-        louper_arg = f" --louper_path '{louper_path}'" if louper_path else ""
-        cmd += f"{rscript_cmd} {script_dir}/rds2cloupe.R -i {celltype_out}/Rdata/Data-Annotation_CellType.rds -o {celltype_out} -n Data_CellAnnotated_Cloupe{louper_arg}\n\n"
-        
         # === 动态组装 HTML 报告 ===
         python_path = celltype_conf.get("python_path", "python3")
         jupyter_path = celltype_conf.get("jupyter_path", "jupyter")
         
-        cmd += "# >>> 自动化组装动态可视化报告 <<<\n"
         dyn_args = f"--outdir {celltype_out}"
         if do_cluster: dyn_args += " --do_cluster"
         if do_refmarker: dyn_args += " --do_refmarker"
@@ -293,10 +286,16 @@ def generate_bash_script(config_file, script_outdir):
         
         do_report = celltype_conf.get("do_report", True)
         if do_report:
+            cmd += "# >>> do_report 为 true，确认最终细胞类型注释完毕，组装出结题动态可视化报告及转化其他各平台交付格式(h5ad/cloupe) <<<\n"
             cmd += f"{python_path} {script_dir}/generate_dynamic_report.py {dyn_args}\n"
             cmd += f"cd {celltype_out} && {jupyter_path} nbconvert --no-input --template pj --HTMLExporter.embed_images=True --to html report_custom.ipynb && mv report_custom.html CellType.Annotation_report.html\n\n"
+            
+            # Seurat 对象多格式输出：rds / cloupe / h5ad
+            cmd += f"{rscript_cmd} -e \"suppressMessages(library(SeuratDisk)); data <- readRDS('{celltype_out}/Rdata/Data-Annotation_CellType.rds'); SaveH5Seurat(data, filename = '{celltype_out}/Data_CellAnnotated.h5Seurat', overwrite=TRUE); Convert('{celltype_out}/Data_CellAnnotated.h5Seurat', dest = 'h5ad', overwrite=TRUE); unlink('{celltype_out}/Data_CellAnnotated.h5Seurat')\"\n"
+            louper_arg = f" --louper_path '{louper_path}'" if louper_path else ""
+            cmd += f"{rscript_cmd} {script_dir}/rds2cloupe.R -i {celltype_out}/Rdata/Data-Annotation_CellType.rds -o {celltype_out} -n Data_CellAnnotated_Cloupe{louper_arg}\n\n"
         else:
-            cmd += "# do_report 为 false，跳过动态图文 HTML 分析报告渲染阶段\n\n"
+            cmd += "# >>> do_report 为 false，代表注释处于检查确认的中间态，在此跳过耗时的动态图文 HTML 报告渲染及 h5ad/cloupe 格式转换步骤 <<<\n\n"
              
         script_content += cmd
         # 记录最终挂载位置供入库
