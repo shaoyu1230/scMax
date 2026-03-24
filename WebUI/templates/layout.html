@@ -92,7 +92,30 @@
     $(document).ready(function () {
       // 初始化全局数据表格，支持前端极速搜、排、比对
       $('.datatable').DataTable({
-        "language": { "url": "//cdn.datatables.net/plug-ins/1.13.4/i18n/zh.json" },
+        "language": {
+            "sProcessing":   "处理中...",
+            "sLengthMenu":   "显示 _MENU_ 项结果",
+            "sZeroRecords":  "没有匹配结果",
+            "sInfo":         "显示第 _START_ 至 _END_ 项结果，共 _TOTAL_ 项",
+            "sInfoEmpty":    "显示第 0 至 0 项结果，共 0 项",
+            "sInfoFiltered": "(由 _MAX_ 项结果过滤)",
+            "sInfoPostFix":  "",
+            "sSearch":       "搜索记录:",
+            "sUrl":          "",
+            "sEmptyTable":     "表中数据为空",
+            "sLoadingRecords": "载入中...",
+            "sInfoThousands":  ",",
+            "oPaginate": {
+                "sFirst":    "首页",
+                "sPrevious": "上页",
+                "sNext":     "下页",
+                "sLast":     "尾页"
+            },
+            "oAria": {
+                "sSortAscending":  ": 以升序排列此列",
+                "sSortDescending": ": 以降序排列此列"
+            }
+        },
         "pageLength": 25,
         "order": [[0, "desc"]], // 默认按照入库时间 ID 倒叙
         "dom": "<'row mb-2'<'col-sm-12 col-md-4'l><'col-sm-12 col-md-4 text-center'B><'col-sm-12 col-md-4'f>>" +
