@@ -30,12 +30,16 @@ def generate_bash_script(config_file, script_outdir):
     global_final_fraction = "NA"
     global_final_anno_table = "NA"
     
+    # 贯穿全程的中间文件输入传递变量
+    next_input_rds = ""
+    
     # --- Step 1: 01_scQC ---
     script_content += "#" + "="*40 + "\n"
     script_content += "# Step 1: 01_scQC (数据整合与质控)\n"
     script_content += "#" + "="*40 + "\n"
-    qc_conf = config.get("01_scQC") or config.get("scQC", {})
-    if qc_conf.get("run", True):
+    qc_in_config = "01_scQC" in config or "scQC" in config
+    qc_conf = config.get("01_scQC") or config.get("scQC") or {}
+    if qc_in_config and qc_conf.get("run", True):
         script_dir = os.path.join(base_dir, "01_scQC", "script")
         qc_out = os.path.join("$OUTDIR", "01_scQC_out")
         script_content += f"if [ -d {qc_out} ]; then rm -rf {qc_out}; fi\n"
@@ -84,14 +88,14 @@ def generate_bash_script(config_file, script_outdir):
         next_input_rds = os.path.join(qc_out, "final_obj.rds")
     else:
         script_content += "# Skip 01_scQC\n\n"
-        next_input_rds = config.get("02_filter", {}).get("rdsfile", "")
 
     # --- Step 2: 02_filter ---
     script_content += "#" + "="*40 + "\n"
     script_content += "# Step 2: 02_filter (根据极值和质控结果对死细胞修剪脱落)\n"
     script_content += "#" + "="*40 + "\n"
-    filter_conf = config.get("02_filter", {})
-    if filter_conf.get("run", True):
+    filter_in_config = "02_filter" in config
+    filter_conf = config.get("02_filter") or {}
+    if filter_in_config and filter_conf.get("run", True):
         script_dir = os.path.join(base_dir, "02_filter", "script")
         filter_out = os.path.join("$OUTDIR", "02_filter_out")
         script_content += f"if [ -d {filter_out} ]; then rm -rf {filter_out}; fi\n"
@@ -129,14 +133,14 @@ def generate_bash_script(config_file, script_outdir):
         next_input_rds = os.path.join(filter_out, "final_obj.rds")
     else:
         script_content += "# Skip 02_filter\n\n"
-        next_input_rds = config.get("03_cluster", {}).get("rdsfile", "")
         
     # --- Step 3: 03_cluster ---
     script_content += "#" + "="*40 + "\n"
     script_content += "# Step 3: 03_cluster (去批次整合与多策略+多分辨率聚类扫参)\n"
     script_content += "#" + "="*40 + "\n"
-    cluster_conf = config.get("03_cluster", {})
-    if cluster_conf.get("run", True):
+    cluster_in_config = "03_cluster" in config
+    cluster_conf = config.get("03_cluster") or {}
+    if cluster_in_config and cluster_conf.get("run", True):
         script_dir = os.path.join(base_dir, "03_cluster", "script")
         cluster_out = os.path.join("$OUTDIR", "03_cluster_out")
         script_content += f"if [ -d {cluster_out} ]; then rm -rf {cluster_out}; fi\n"
@@ -176,8 +180,9 @@ def generate_bash_script(config_file, script_outdir):
     script_content += "#" + "="*40 + "\n"
     script_content += "# Step 4: 04_subcluster (高级亚群细分探针与特化整合策略)\n"
     script_content += "#" + "="*40 + "\n"
-    subcluster_conf = config.get("04_subcluster", {})
-    if subcluster_conf.get("run", False):
+    subcluster_in_config = "04_subcluster" in config
+    subcluster_conf = config.get("04_subcluster") or {}
+    if subcluster_in_config and subcluster_conf.get("run", False):
         script_dir = os.path.join(base_dir, "04_subcluster", "script")
         user_rds = subcluster_conf.get("rdsfile", "")
         # 如果亚群挖掘未指明提取的母体文件，则尝试延续上一环节最后输出的一份
@@ -229,8 +234,9 @@ def generate_bash_script(config_file, script_outdir):
     script_content += "#" + "="*40 + "\n"
     script_content += "# Step 5: 05_celltype (专家组级人工标注、格式多输出与大屏构建)\n"
     script_content += "#" + "="*40 + "\n"
-    celltype_conf = config.get("05_celltype", {})
-    if celltype_conf.get("run", False):
+    celltype_in_config = "05_celltype" in config
+    celltype_conf = config.get("05_celltype") or {}
+    if celltype_in_config and celltype_conf.get("run", False):
         db_conf = config.get("Database_Info", {})
         anno_level = db_conf.get("annotation_level", "MajorType").replace(" ", "_").replace("-", "_")
         
@@ -318,16 +324,29 @@ python3 {os.path.join(base_dir, "scMax_db_manager.py")} -c '{os.path.abspath(con
     script_content += "\necho 'scMax Pipeline completed successfully!'\n"
     
     run_steps = []
-    if (config.get("01_scQC") or config.get("scQC", {})).get("run", True):
+    qc_in_config = "01_scQC" in config or "scQC" in config
+    qc_conf = config.get("01_scQC") or config.get("scQC") or {}
+    if qc_in_config and qc_conf.get("run", True):
         run_steps.append("01")
-    if config.get("02_filter", {}).get("run", True):
+        
+    filter_in_config = "02_filter" in config
+    filter_conf = config.get("02_filter") or {}
+    if filter_in_config and filter_conf.get("run", True):
         run_steps.append("02")
-    if config.get("03_cluster", {}).get("run", True):
+        
+    cluster_in_config = "03_cluster" in config
+    cluster_conf = config.get("03_cluster") or {}
+    if cluster_in_config and cluster_conf.get("run", True):
         run_steps.append("03")
-    if config.get("04_subcluster", {}).get("run", False):
+        
+    subcluster_in_config = "04_subcluster" in config
+    subcluster_conf = config.get("04_subcluster") or {}
+    if subcluster_in_config and subcluster_conf.get("run", False):
         run_steps.append("04")
-    celltype_conf = config.get("05_celltype", {})
-    if celltype_conf.get("run", False):
+        
+    celltype_in_config = "05_celltype" in config
+    celltype_conf = config.get("05_celltype") or {}
+    if celltype_in_config and celltype_conf.get("run", False):
         sub_opts = []
         if celltype_conf.get("do_cluster", True): sub_opts.append("clus")
         if celltype_conf.get("do_refmarker", True): sub_opts.append("refm")
