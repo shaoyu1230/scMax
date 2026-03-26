@@ -245,7 +245,11 @@ def generate_bash_script(config_file, script_outdir):
         celltype_out = os.path.join(celltype_base, "output")
         celltype_upload = os.path.join(celltype_base, "upload")
         
-        script_content += f"if [ -d {celltype_base} ]; then rm -rf {celltype_base}; fi\n"
+        # 移除如果重新运行部分分析时整个结果目录被清空的预处理行为
+        # 新增 force_clean 开关允许用户在第二次全新分析时自主选择完全清空目录
+        if celltype_conf.get("force_clean", False):
+            script_content += f"if [ -d {celltype_base} ]; then rm -rf {celltype_base}; fi\n"
+            
         script_content += f"mkdir -p {celltype_out}\n"
         script_content += f"mkdir -p {celltype_upload}\n"
         

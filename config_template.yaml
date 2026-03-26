@@ -124,6 +124,7 @@ global_outdir: "/Users/angela/Documents/00_annoroad/06_Development/scMax/test_ou
   celltype_keep: ""         # 细胞类型保留列表（可选，留空则按注释表自动汇总）
 
   # ------ 可选流程开关 ------
+  force_clean: false        # 是否在运行前强制清空整个 05 输出目录（若需分步积累请保持 false，全新运行可选 true）
   do_cluster: true          # 运行 cluster 绘图及差异/富集
   do_refmarker: true        # 运行参考 marker 绘图
   refmarker_file: ""        # 若 do_refmarker 为true，提供包含 CellType 和 Markers 列的 TSV/CSV 文件画点阵图
