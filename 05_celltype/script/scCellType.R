@@ -298,6 +298,11 @@ if(do_celltype){
   roe_groups <- intersect(group_col,colnames(data.f@meta.data))
   if (!is.null(roe_groups)){
     for(group in roe_groups){
+      # 如果只有 1 个分组或没有样本重复，不进行 Roe 分析
+      if(length(unique(data.f@meta.data[,group])) == 1 || length(unique(data.f@meta.data$Sample)) == length(unique(data.f@meta.data[,group]))){
+        print(paste0("Skip Roe analysis for ", group, ": only 1 group or no sample replicates."))
+        next
+      }
       Roe <- distribution_Roe(data.f@meta.data,celltype_column = celltype_col,celltype_level = celltype.keep,
                               condition_column = group,out_prefix=paste0(outdir,'/celltype_fraction/3_CellType_Keep.in.',group,'-'))
       ggsave(paste0(outdir,'/celltype_fraction/3_CellType_Keep.in.',group,'-Roe.pdf'),width=5,height=5)

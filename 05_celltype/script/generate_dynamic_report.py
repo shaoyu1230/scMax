@@ -76,7 +76,7 @@ def main():
         "",
         "因此，围绕细胞注释结果解读，本报告主要分为五部分：‌  ",
         "1、降维聚类可视化‌：直观体现各类群细胞特征。  ",
-        "‌2、特异性标志物定位‌：验证客户提供Marker基因的亚群表达特征。  ",
+        "‌2、特异性标志物定位‌：验证客户提供Marker基因的亚群表达特征。 （如未提供参考 marker 基因则无此部分结果） ",
         "3、人工&数据库校准‌：人工校正和安诺数据库辅助验证，得出准确注释结果。  ",
         "‌4、组间差异比较：组间细胞类型比例比较和偏好性分析，找出关键差异亚群。  ",
         "‌5、细胞功能分析‌：富集分析不同细胞类型的功能特征，找出关键分子通路。  ",
@@ -258,7 +258,16 @@ def main():
             "<p style=\"font-size: 12px;\">注：注释后的细胞UMAP图谱，不同颜色代表不同的细胞/样本/分组。</p>"
         ]))
         cells.append(create_markdown_cell([
-            "## 3.2 高质量细胞类型注释结果",
+            "## 3.2 所有细胞类型注释 marker 基因表达展示",
+            "分析细胞类型定义所使用的主要Marker基因在所有细胞群中的表达情况，用于验证注释的准确性，以及Marker的特异性。",
+            "",
+            "绘制气泡图，展示Marker基因的表达水平及在细胞类型中表达比例：",
+            "",
+            "<img src=\"annotation/CellType_All/3_CellType.dotplot.clusterAnno.png\" alt=\"AllAnnoDot\" width=\"600\">",
+            "<p style=\"font-size: 12px;\">注：细胞类型定义使用的Marker基因在不同细胞类型中表达量的dotplot图，纵轴为定义的细胞类型及聚类号，横轴为基因名。</p>"
+        ]))
+        cells.append(create_markdown_cell([
+            "## 3.3 高质量细胞类型注释结果",
             "去除部分不展示的细胞，比如双胞（Doublets）、低质量细胞（Low quality cells）等，得到高质量细胞类型数据。",
             "",
             "<table>",
@@ -270,7 +279,7 @@ def main():
             "<p style=\"font-size: 12px;\">注：去除双细胞和低质量细胞的umap图谱，不同颜色代表不同的细胞类型。</p>"
         ]))
         cells.append(create_markdown_cell([
-            "## 3.3 细胞类型定义使用的marker基因表达分布",
+            "## 3.4 细胞类型定义使用的marker基因表达分布",
             "分析细胞类型定义所使用的主要Marker基因在注释好的细胞群中的表达情况，用于验证注释的准确性，以及Marker的特异性。",
             "",
             "（1）绘制气泡图，展示Marker基因的表达水平及在细胞类型中表达比例：",
@@ -370,10 +379,48 @@ def main():
         "| 软件名称            | 版本号    | 功能描述                              |",
         "|---------------------|-----------|---------------------------------------|",
         "| R                   | 4.3.1     | R语言软件                             |",
-        "| R Seurat            | 4.x       | 单细胞数据分析工具                    |",
-        "| R clusterProfiler   | 4.x       | GO和KEGG富集分析工具                  |"
+        "| R Seurat            | 4.0.0       | 单细胞数据分析工具                    |",
+        "| R clusterProfiler   | 4.10.0       | GO和KEGG富集分析工具                  |"
     ]))
     
+    cells.append(create_markdown_cell([
+        "# 参考文献",
+        "",
+        "Abdi H, Williams L J. Principal component analysis[J]. Wiley interdisciplinary reviews: computational statistics, 2010, 2(4): 433-459.  ",
+        "",
+        "Butler A, Hoffman P, Smibert P, et al. Integrating single-cell transcriptomic data across different conditions, technologies, and species[J]. Nature biotechnology, 2018, 36(5): 411.  ",
+        "",
+        "Camp J G, Sekine K, Gerber T, et al. Multilineage communication regulates human liver bud development from pluripotency[J]. Nature, 2017, 546(7659): 533.  ",
+        "",
+        "Ding C, He X. K-means clustering via principal component analysis[C]//Proceedings of the twenty-first international conference on Machine learning. ACM, 2004: 29.  ",
+        "",
+        "Dobin A, Davis C A, Schlesinger F, et al. STAR: ultrafast universal RNA-seq aligner[J]. Bioinformatics, 2013, 29(1): 15-21.  ",
+        "",
+        "Maaten L, Hinton G. Visualizing data using t-SNE[J]. Journal of Machine Learning Research, 2008, 9(Nov): 2579-2605.  ",
+        "",
+        "Macosko E Z, Basu A, Satija R, et al. Highly Parallel Genome-wide Expression Profiling of Individual Cells Using Nanoliter Droplets.[J]. Cell, 2015, 161(5):1202.  ",
+        "",
+        "Hinton G, Roweis S. Stochastic Neighbor Embedding[J]. Advances in Neural Information Processing Systems, 2010, 41(4):833--840.  ",
+        "",
+        "Shannon, P. et al. Cytoscape: A software environment for integrated models of biomolecular interaction networks. Genome Research 13, 2498-2504 (2003).  ",
+        "",
+        "Van der Maaten, L.J.P. Accelerating t-SNE using Tree-Based Algorithms. Journal of Machine Learning Research 15, 3221-3245 (2014).  ",
+        "",
+        "Zhong S, Zhang S, Fan X, et al. A single-cell RNA-seq survey of the developmental landscape of the human prefrontal cortex[J]. Nature, 2018, 555(7697): 524.  ",
+        "",
+        "Wang Y , Wang R , Zhang S , et al. iTALK: an R Package to Characterize and Illustrate Intercellular Communication. 2019.  ",
+        "",
+        "Cabello-Aguilar S , Alame M , Kon-Sun-Tack F , et al. SingleCellSignalR: inference of intercellular networks from single-cell transcriptomics[J]. Nucleic Acids Research, 2020.  ",
+        "",
+        "Patel AP, Tirosh I, Trombetta JJ, et al. Single-cell RNA-seq highlights intratumoral heterogeneity in primary glioblastoma. Science.2014;344(6190):1396-1401. doi:10.1126/science.1254257.  ",
+        "",
+        "La Manno G, Soldatov R, Zeisel A, et al.RNA velocity of single cells.Nature. 2018;560(7719):494-498. doi:10.1038/s41586-018-0414-6.  ",
+        "",
+        "Gao R , Bai S , Ying C H , et al. Delineating copy number and clonal substructure in human tumors from single-cell transcriptomes[J]. Nature Biotechnology, 2021:1-10.  ",
+        "",
+        "Zhang, L., Yu, X., Zheng, L. et al. Lineage tracking reveals dynamic relationships of T cells in colorectal cancer. Nature.2018; 564: 268–272.  "
+    ]))
+
     # 写入文件
     target_ipynb = os.path.join(args.outdir, "report_custom.ipynb")
     os.makedirs(args.outdir, exist_ok=True)

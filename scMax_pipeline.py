@@ -241,10 +241,13 @@ def generate_bash_script(config_file, script_outdir):
         anno_level = db_conf.get("annotation_level", "MajorType").replace(" ", "_").replace("-", "_")
         
         script_dir = os.path.join(base_dir, "05_celltype", "script")
-        celltype_out = os.path.join("$OUTDIR", f"05_annotation_{anno_level}")
+        celltype_base = os.path.join("$OUTDIR", f"05_annotation_{anno_level}")
+        celltype_out = os.path.join(celltype_base, "output")
+        celltype_upload = os.path.join(celltype_base, "upload")
         
-        script_content += f"if [ -d {celltype_out} ]; then rm -rf {celltype_out}; fi\n"
+        script_content += f"if [ -d {celltype_base} ]; then rm -rf {celltype_base}; fi\n"
         script_content += f"mkdir -p {celltype_out}\n"
+        script_content += f"mkdir -p {celltype_upload}\n"
         
         user_rds = celltype_conf.get("rdsfile", "")
         # 如果未提供 rdsfile，默认读取 03 的结果
@@ -296,7 +299,31 @@ def generate_bash_script(config_file, script_outdir):
             cmd += f"{rscript_cmd} {script_dir}/rds2cloupe.R -i {celltype_out}/Rdata/Data-Annotation_CellType.rds -o {celltype_out} -n Data_CellAnnotated_Cloupe{louper_arg}\n\n"
         else:
             cmd += "# >>> do_report 为 false，代表注释处于检查确认的中间态，在此跳过耗时的动态图文 HTML 报告渲染及 h5ad/cloupe 格式转换步骤 <<<\n\n"
-             
+        
+        # 构建 delivery 制品
+        cmd += f"(\ncd {celltype_upload}\n"
+        cmd += f"ln -sf ../output/cluster_characterization .\n"
+        cmd += f"ln -sf ../output/marker_expression .\n"
+        cmd += f"ln -sf ../output/annotation .\n"
+        cmd += f"ln -sf ../output/celltype_fraction .\n"
+        cmd += f"ln -sf ../output/celltype_characterization .\n"
+        cmd += f"ln -sf ../output/CellType.Annotation_report.html .\n"
+        # 交付rds结果
+        cmd += f"ln -sf ../output/Rdata/Data-Annotation_CellType.rds .\n"
+        readme_content = (
+            "├── Data-Annotation_CellType.rds       分析结果的Seurat对象，需要用 R 语言读取\n"
+            "├── cluster_characterization         cluster特征：包括cluster分布，样本/分组分布，cluster占比等\n"
+            "├── marker_expression                参考marker表达绘图\n"
+            "├── annotation                       细胞类型注释结果\n"
+            "│   ├── CellType_All                   所有细胞注释结果\n"
+            "│   └── CellType_Keep                  去除低质量、doublet等不感兴趣的细胞后，细胞注释结果\n"
+            "├── celltype_fraction                细胞占比分析\n"
+            "├── celltype_characterization        细胞类型特征，包括差异分析和富集分析\n"
+            "└── CellType.Annotation_report.html    细胞类型注释报告\n"
+        )
+        cmd += f"cat << 'EOF' > 结果文件说明.txt\n{readme_content}EOF\n"
+        cmd += ")\n\n"
+        
         script_content += cmd
         # 记录最终挂载位置供入库
         global_final_umap = str(os.path.join(celltype_out, "annotation", "CellType_All", "1_CellType.UMAP.png"))
