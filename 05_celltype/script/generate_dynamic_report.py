@@ -84,7 +84,8 @@ def main():
     ]))
     
     # --- 模块 1: 聚类分析 (do_cluster) ---
-    if args.do_cluster:
+    has_cluster = args.do_cluster or os.path.exists(os.path.join(args.outdir, "cluster_characterization"))
+    if has_cluster:
         cells.append(create_markdown_cell([
             "# 一、聚类分析",
             "",
@@ -212,7 +213,8 @@ def main():
         ]))
 
     # --- 模块 2: 参考Marker验证 (do_refmarker) ---
-    if args.do_refmarker:
+    has_refmarker = args.do_refmarker or os.path.exists(os.path.join(args.outdir, "marker_expression"))
+    if has_refmarker:
         cells.append(create_markdown_cell([
             "# 二、参考marker表达情况",
             "",
@@ -221,17 +223,18 @@ def main():
             "（1）绘制参考Marker在各细胞群的表达水平气泡图，可直观得看到各细胞类型Marker在细胞群的表达情况："
         ]))
         cells.append(create_markdown_cell([
-            "<img src=\"marker_expression_in_cluster/1_DotPlot-RefMarkers.png\" alt=\"RefMarker\" width=\"800\" >",
+            "<img src=\"marker_expression/1_DotPlot-RefMarkers.png\" alt=\"RefMarker\" width=\"800\" >",
             "<p style=\"font-size: 12px;\">注：客户提供的Marker基因在不同Cluster中表达量的dotplot热图，横轴为聚类（Cluster），纵轴右侧标签为基因，纵轴左侧标签为Marker基因所属的细胞类型。点/方块的颜色表示表达量高低，从蓝到红表示表达量从低到高，即越红表示表达量越高。点的大小表示某Cluster中有该基因表达的细胞占比，点越大，说明有表达的细胞占比越高。</p>",
             "",
             "（2）绘制Marker基因表达UMAP图，可直观得看到基因整体表达情况：",
             "",
-            "<img src=\"marker_expression_in_cluster/2_FeaturePlot.example.png\" alt=\"FeaturePlot\" width=\"500\">",
+            "<img src=\"marker_expression/2_FeaturePlot.example.png\" alt=\"FeaturePlot\" width=\"500\">",
             "<p style=\"font-size: 12px;\">注：客户提供的Marker基因在不同Cluster中表达量的feature plot图。红色代表高表达，蓝色代表低表达。</p>"
         ]))
         
     # --- 模块 3: 细胞类型注释 (do_annotation) ---
-    if args.do_annotation:
+    has_annotation = args.do_annotation or os.path.exists(os.path.join(args.outdir, "annotation"))
+    if has_annotation:
         cells.append(create_markdown_cell([
             "# 三、细胞类型注释",
             "",
@@ -293,7 +296,8 @@ def main():
         ]))
         
     # --- 模块 4: 分类比例推算 (do_celltype) ---
-    if args.do_celltype:
+    has_celltype = args.do_celltype or os.path.exists(os.path.join(args.outdir, "celltype_fraction"))
+    if has_celltype:
         cells.append(create_markdown_cell([
             "# 四、细胞类型比例分析",
             "",
@@ -334,7 +338,8 @@ def main():
             ]))
         
     # --- 模块 5: 分类间功能富集 (do_celltype_de) ---
-    if args.do_celltype_de:
+    has_celltype_de = args.do_celltype_de or os.path.exists(os.path.join(args.outdir, "celltype_characterization"))
+    if has_celltype_de:
         cells.append(create_markdown_cell([
             "# 五、细胞类型特征基因表达分析",
             "",
@@ -365,7 +370,7 @@ def main():
         "",
         "```text",
         "├── cluster_characterization         cluster特征：包括cluster分布，样本/分组分布，cluster占比等",
-        "├── marker_expression_in_cluster                参考marker表达绘图",
+        "├── marker_expression                参考marker表达绘图",
         "├── annotation                       细胞类型注释结果",
         "│   ├── CellType_All                   所有细胞注释结果",
         "│   └── CellType_Keep                  去除低质量、doublet等不感兴趣的细胞后，细胞注释结果",
