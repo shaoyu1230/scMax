@@ -103,10 +103,15 @@ def main():
     
     # 解析输出目录中的图片和表格
     outdir = os.path.abspath(args.outdir)
+    # 计算对应的对外挂载 delivery 目录
+    upload_dir = outdir.replace("/output", "/upload") if outdir.endswith("/output") else outdir
     
     def find_file(pattern):
         matches = glob.glob(os.path.join(outdir, pattern), recursive=True)
-        return matches[0] if matches else ""
+        if matches:
+            # 返回对外提供服务的软连接路径以确保相对资源可用
+            return matches[0].replace(outdir, upload_dir) if outdir.endswith("/output") else matches[0]
+        return ""
         
     # 优先找 Keep，如果没有再找 All (放宽匹配前缀以兼容带有 1_ 2_ 等前缀的老版本目录)
     umap_path = find_file('**/*annotation/*CellType_Keep/*.UMAP-blank.png')
