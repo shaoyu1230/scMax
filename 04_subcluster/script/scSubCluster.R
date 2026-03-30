@@ -29,7 +29,18 @@ parser$add_argument('--refmarker_file', dest='refmarker_file', default="", help=
 parser$add_argument('--nfeatures', dest='nfeatures', default=1500, type='integer', help='亚群重新提取的高变基因数')
 parser$add_argument('--npcs', dest='npcs', default=20, type='integer', help='亚群 PCA 降维参数（通常亚群不需要过大）')
 
+parser$add_argument('--do_cluster', dest='do_cluster', action='store_true', help='执行高级群集特征表征(耗时长)')
+parser$add_argument('--do_refmarker', dest='do_refmarker', action='store_true', help='执行参考靶点探查')
+parser$add_argument('--orgdb', dest='orgdb', default='org.Hs.eg.db', type='character', help='富集分析的OrgDb')
+parser$add_argument('--organism_kegg', dest='organism_kegg', default='hsa', type='character', help='富集分析的KEGG缩写')
+
 opt <- parser$parse_args()
+
+suppressMessages(library(this.path))
+func_script <- file.path(dirname(this.path::this.dir()), "../05_celltype/script/func_scRNA_celltype_anno.R")
+if (file.exists(func_script)) {
+    source(func_script)
+}
 
 # ===== 辅助绘图函数 =====
 plot_refmarkers_dot <- function(data, refmarker.file, outdir) {
@@ -271,6 +282,39 @@ for (method in methods) {
     # 绘制参考 Marker DotPlot (如果提供了标记列表)
     if (opt$refmarker_file != "") {
        plot_refmarkers_dot(tmp, opt$refmarker_file, res_dir)
+    }
+    
+    # +++ 高级特征分析 (与 05_celltype 平齐，便于跳步软链) +++
+    if (isTRUE(opt$do_cluster)) {
+       cat("     - [高级选项] 正在执行全方位亚群特征表征 (cluster_characterization) ...\n")
+       c_outdir <- file.path(res_dir, "cluster_characterization")
+       dir.create(c_outdir, showWarnings=FALSE, recursive=TRUE)
+       tryCatch({
+         if (exists("cluster_plots")) {
+             cluster_plots(tmp, c_outdir, groups=unique(c(opt$col_sample, opt$col_group)), palcolor=pal)
+             cluster_de(tmp, rdsdir=file.path(c_outdir, "Rdata"), outdir=file.path(c_outdir,"4_Cluster.DE"))
+             cluster_enrich(derds=file.path(c_outdir, "Rdata", "ClusterDEGs.rds"), orgdb=opt$orgdb, organism_kegg=opt$organism_kegg, enrichdir=file.path(c_outdir,"5_Enrich"))
+         } else {
+             warning("func_scRNA_celltype_anno.R 加载失败，跳过高级表征！")
+         }
+       }, error = function(e){
+         cat("       (SubCluster 高级表征执行报错失败，将跳过当前组：", conditionMessage(e), ")\n")
+       })
+    }
+    
+    if (isTRUE(opt$do_refmarker) && opt$refmarker_file != "") {
+       cat("     - [高级选项] 正在执行全套参考 Marker 映射 (marker_expression) ...\n")
+       m_outdir <- file.path(res_dir, "marker_expression")
+       dir.create(m_outdir, showWarnings=FALSE, recursive=TRUE)
+       tryCatch({
+         if (exists("plot_refmarkers")) {
+            plot_refmarkers(tmp, opt$refmarker_file, outdir=m_outdir)
+         } else {
+            warning("func_scRNA_celltype_anno.R 加载失败，跳过全套 Reference Marker 探查！")
+         }
+       }, error = function(e){
+         cat("       (高级参考 Marker 全套绘制失败：", conditionMessage(e), ")\n")
+       })
     }
   }
 

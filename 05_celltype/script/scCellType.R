@@ -26,6 +26,8 @@ parser$add_argument('--inputrds', dest = 'inputrds', default = '', help = 'overr
 parser$add_argument('--annotated_rds', dest = 'annotated_rds', default = '', help = 'use an existing annotated rds for celltype plots/DE')
 parser$add_argument('--do_cluster', dest = 'do_cluster', action = 'store_true', help = 'run cluster plots and cluster DE/enrich')
 parser$add_argument('--do_refmarker', dest = 'do_refmarker', action = 'store_true', help = 'run reference marker plots')
+parser$add_argument('--skip_cluster', dest = 'skip_cluster', action = 'store_true', help = 'Force skip cluster operations regardless of config')
+parser$add_argument('--skip_refmarker', dest = 'skip_refmarker', action = 'store_true', help = 'Force skip refmarker operations regardless of config')
 parser$add_argument('--do_annotation', dest = 'do_annotation', action = 'store_true', help = 'run manual annotation')
 parser$add_argument('--do_celltype', dest = 'do_celltype', action = 'store_true', help = 'run celltype umap plots and fraction plots')
 parser$add_argument('--do_celltype_de', dest = 'do_celltype_de', action = 'store_true', help = 'run celltype DE and enrichment')
@@ -84,8 +86,8 @@ if (orgdb_custom != "" && kegg_custom != "") {
   organism_kegg <- "hsa"
 }
 
-do_cluster <- isTRUE(opt$do_cluster) || isTRUE(ct_conf$do_cluster)
-do_refmarker <- isTRUE(opt$do_refmarker) || isTRUE(ct_conf$do_refmarker)
+do_cluster <- (isTRUE(opt$do_cluster) || isTRUE(ct_conf$do_cluster)) && !isTRUE(opt$skip_cluster)
+do_refmarker <- (isTRUE(opt$do_refmarker) || isTRUE(ct_conf$do_refmarker)) && !isTRUE(opt$skip_refmarker)
 do_annotation <- isTRUE(opt$do_annotation) || isTRUE(ct_conf$do_annotation)
 do_celltype <- isTRUE(opt$do_celltype) || isTRUE(ct_conf$do_celltype)
 do_celltype_de <- isTRUE(opt$do_celltype_de) || isTRUE(ct_conf$do_celltype_de)
@@ -241,7 +243,7 @@ if(do_annotation){
   df <- read.table(annofile,sep='\t',header=TRUE)
   cols <- intersect(c('Cluster','CellType','Markers','reference','description'), colnames(df))
   df <- df[,cols, drop = FALSE]
-  png(paste0(outdir,'/annotation/CellType_All/0_Cluster-CellType.anno.png'), width = 2000, height = 1600, res = 150)
+  png(paste0(outdir,'/annotation/CellType_All/0_Cluster-CellType.anno.png'), width = 3000, height = 1600, res = 150)
   grid.table(df)
   dev.off()
   file.copy(annofile,paste0(outdir,'/annotation/CellType_All/0_Cluster-CellType.anno.xls'))

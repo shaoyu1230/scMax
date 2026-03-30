@@ -159,7 +159,19 @@ def generate_bash_script(config_file, script_outdir):
         integrate_by = cluster_conf.get("integrate_by", col_sample) # 默认使用 Sample 级别的列
         nfeatures = cluster_conf.get("nfeatures", 2000)
         npcs = cluster_conf.get("npcs", 30)
+        do_cluster = cluster_conf.get("do_cluster", False)
+        do_refmarker = cluster_conf.get("do_refmarker", False)
         refmarker_file = cluster_conf.get("refmarker_file", "")
+        
+        # 自动推断 orgdb 用于早期聚类的直接富集
+        db_conf = config.get("Database_Info", {})
+        species = db_conf.get("species", "Human")
+        if species.lower() == "mouse":
+            auto_orgdb = "org.Mm.eg.db"
+            auto_kegg = "mmu"
+        else:
+            auto_orgdb = "org.Hs.eg.db"
+            auto_kegg = "hsa"
         
         cmd = f"{rscript_cmd} {script_dir}/scCluster.R \\\n"
         cmd += f"  --rds '{next_input_rds}' \\\n"
@@ -171,6 +183,12 @@ def generate_bash_script(config_file, script_outdir):
         cmd += f"  --col_sample '{col_sample}' \\\n"
         cmd += f"  --col_group '{col_group}' \\\n"
         cmd += f"  --integrate_by '{integrate_by}' \\\n"
+        if do_cluster:
+            cmd += f"  --do_cluster \\\n"
+            cmd += f"  --orgdb '{auto_orgdb}' \\\n"
+            cmd += f"  --organism_kegg '{auto_kegg}' \\\n"
+        if do_refmarker:
+            cmd += f"  --do_refmarker \\\n"
         if refmarker_file:
             cmd += f"  --refmarker_file '{refmarker_file}' \\\n"
         cmd += f"  --nfeatures {nfeatures} \\\n"
@@ -205,7 +223,18 @@ def generate_bash_script(config_file, script_outdir):
         integrate_by = subcluster_conf.get("integrate_by", col_sample)
         nfeatures = subcluster_conf.get("nfeatures", 1500)
         npcs = subcluster_conf.get("npcs", 20)
+        do_cluster = subcluster_conf.get("do_cluster", False)
+        do_refmarker = subcluster_conf.get("do_refmarker", False)
         refmarker_file = subcluster_conf.get("refmarker_file", "")
+        
+        db_conf = config.get("Database_Info", {})
+        species = db_conf.get("species", "Human")
+        if species.lower() == "mouse":
+            auto_orgdb = "org.Mm.eg.db"
+            auto_kegg = "mmu"
+        else:
+            auto_orgdb = "org.Hs.eg.db"
+            auto_kegg = "hsa"
         
         # 强制亚群参数必须有界定
         if not subset_col or not subset_val:
@@ -221,6 +250,12 @@ def generate_bash_script(config_file, script_outdir):
             cmd += f"  --col_sample '{col_sample}' \\\n"
             cmd += f"  --col_group '{col_group}' \\\n"
             cmd += f"  --integrate_by '{integrate_by}' \\\n"
+            if do_cluster:
+                cmd += f"  --do_cluster \\\n"
+                cmd += f"  --orgdb '{auto_orgdb}' \\\n"
+                cmd += f"  --organism_kegg '{auto_kegg}' \\\n"
+            if do_refmarker:
+                cmd += f"  --do_refmarker \\\n"
             if refmarker_file:
                 cmd += f"  --refmarker_file '{refmarker_file}' \\\n"
             cmd += f"  --nfeatures {nfeatures} \\\n"
@@ -272,16 +307,50 @@ def generate_bash_script(config_file, script_outdir):
             script_content += "echo 'Error: 启用 do_annotation 注释阶段但未传入映射注释表(annofile)！'\n"
             script_content += "exit 1\n\n"
             
+        rds_dir = os.path.dirname(next_input_rds) if next_input_rds else ""
+        
+        dyn_args = f"--outdir {celltype_out}"
+        rscript_skip_flags = ""
+        
+        if do_cluster:
+            script_content += f"""
+# 智能跳过: 如果数据源的上一级（03/04）已经做了 cluster_characterization，则直接软链，不再重复执行
+if [ -d "{rds_dir}/cluster_characterization" ] && [ -n "{rds_dir}" ]; then
+    echo "[Smart-Link] Found pre-computed cluster_characterization in {rds_dir}, linking directly..."
+    ln -sfn "$(cd "{rds_dir}/cluster_characterization" && pwd)" "{celltype_out}/cluster_characterization"
+    SKIP_CLUSTER_FLAG=""
+    RSCRIPT_SKIP_CLUSTER="--skip_cluster"
+else
+    SKIP_CLUSTER_FLAG="--do_cluster"
+    RSCRIPT_SKIP_CLUSTER=""
+fi
+"""
+            dyn_args += " ${SKIP_CLUSTER_FLAG}"
+            rscript_skip_flags += " ${RSCRIPT_SKIP_CLUSTER}"
+            
+        if do_refmarker:
+            script_content += f"""
+# 智能跳过: 如果数据源的上一级做了 marker_expression，则软链
+if [ -d "{rds_dir}/marker_expression" ] && [ -n "{rds_dir}" ]; then
+    echo "[Smart-Link] Found pre-computed marker_expression in {rds_dir}, linking directly..."
+    ln -sfn "$(cd "{rds_dir}/marker_expression" && pwd)" "{celltype_out}/marker_expression"
+    SKIP_REFMARKER_FLAG=""
+    RSCRIPT_SKIP_REFMARKER="--skip_refmarker"
+else
+    SKIP_REFMARKER_FLAG="--do_refmarker"
+    RSCRIPT_SKIP_REFMARKER=""
+fi
+"""
+            dyn_args += " ${SKIP_REFMARKER_FLAG}"
+            rscript_skip_flags += " ${RSCRIPT_SKIP_REFMARKER}"
+
         # === 直接调用分析脚本（不依赖 Makefile），读取主 YAML 配置 ===
-        cmd = f"{rscript_cmd} {script_dir}/scCellType.R --config '{config_file}' --outdir {celltype_out} --inputrds '{next_input_rds}'\n\n"
+        cmd = f"{rscript_cmd} {script_dir}/scCellType.R --config '{config_file}' --outdir {celltype_out} --inputrds '{next_input_rds}'{rscript_skip_flags}\n\n"
         
         # === 动态组装 HTML 报告 ===
         python_path = celltype_conf.get("python_path", "python3")
         jupyter_path = celltype_conf.get("jupyter_path", "jupyter")
         
-        dyn_args = f"--outdir {celltype_out}"
-        if do_cluster: dyn_args += " --do_cluster"
-        if do_refmarker: dyn_args += " --do_refmarker"
         if do_annotation: dyn_args += " --do_annotation"
         if do_celltype: dyn_args += " --do_celltype"
         if do_celltype_de: dyn_args += " --do_celltype_de"

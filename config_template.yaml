@@ -77,8 +77,10 @@ global_outdir: "/Users/angela/Documents/00_annoroad/06_Development/scMax/test_ou
   nfeatures: 2000           # 寻找的高频差异表达特征基因数
   npcs: 30                  # 构建主成分选取维度
   
-  # ------ 附加特征标记分析 (可选) ------
-  refmarker_file: ""        # 若提供包含 CellType 和 Markers 列的 TSV 文件，可自动计算经典 Marker 在各群的 DotPlot 映射
+  # ------ 附加高级特征分析 (可选) ------
+  do_cluster: false         # 是否直接在聚类阶段就进行高强度的差异基因、富集分析出图（耗时将显著增加）
+  do_refmarker: false       # 是否依据特征集画出表达点阵图
+  refmarker_file: ""        # 若 do_refmarker 为true，提供包含 CellType 和 Markers 列的 TSV/CSV 文件
 
 04_subcluster:
   run: true
@@ -100,7 +102,11 @@ global_outdir: "/Users/angela/Documents/00_annoroad/06_Development/scMax/test_ou
   integrate_by: "Sample"    # 指定去批次效应时依赖的校正分类列名
   nfeatures: 1500           # 亚群细分重新找的高变特征基因数 (不建议太多，因为是内部比较)
   npcs: 20                  # 亚群较小，用于构建主成分的 PCA 维度稍微调低
-  refmarker_file: ""        # （可选）针对此亚群特化的经典 Marker 映射文件，提供时将画出 DotPlot 图。文件以Tab键分割，基因之间以英文逗号分割。列名要包含CellType，Markers
+
+  # ------ 附加高级特征分析 (可选) ------
+  do_cluster: false         # 是否直接在此阶段进行高强度的差异基因、富集分析出图（耗时将显著增加）
+  do_refmarker: false       # 是否依据特征集画出表达点阵图
+  refmarker_file: ""        # 若 do_refmarker 为true，提供包含 CellType 和 Markers 列的 TSV/CSV 文件
 
 
 05_celltype:
