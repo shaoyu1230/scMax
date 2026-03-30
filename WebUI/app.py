@@ -91,10 +91,10 @@ def view_image():
     path = request.args.get('path')
     bk_path = request.args.get('bk_path')
     
-    if bk_path and os.path.exists(bk_path):
-        return send_file(bk_path)
     if path and os.path.exists(path):
         return send_file(path)
+    if bk_path and os.path.exists(bk_path):
+        return send_file(bk_path)
     return "Image not found (Source and backup may be deleted)", 404
 
 @app.route('/view_report')
@@ -103,10 +103,10 @@ def view_report():
     path = request.args.get('path')
     bk_path = request.args.get('bk_path')
     
-    if bk_path and os.path.exists(bk_path):
-        return send_file(bk_path)
     if path and os.path.exists(path):
         return send_file(path)
+    if bk_path and os.path.exists(bk_path):
+        return send_file(bk_path)
     return "Report not found (Source and backup may be deleted)", 404
 
 @app.route('/<path:filename>')

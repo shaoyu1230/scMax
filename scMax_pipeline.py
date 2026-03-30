@@ -348,7 +348,7 @@ def generate_bash_script(config_file, script_outdir):
 # ========================================
 # Execute DB Registration (Central UI & Experience DB)
 # ========================================
-python3 {os.path.join(base_dir, "scMax_db_manager.py")} -c '{os.path.abspath(config_file)}' -o '{celltype_out}'
+python3 {os.path.join(base_dir, "scMax_db_manager.py")} -c '{os.path.abspath(config_file)}' -o "{celltype_out}"
 
 '''
     script_content += "\necho 'scMax Pipeline completed successfully!'\n"
