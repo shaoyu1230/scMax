@@ -107,27 +107,33 @@ def main():
     upload_dir = outdir.replace("/output", "/upload") if outdir.endswith("/output") else outdir
     
     def find_file(pattern):
+        # 兼容前缀，允许更灵活匹配结构
         matches = glob.glob(os.path.join(outdir, pattern), recursive=True)
+        if not matches:
+            matches = glob.glob(os.path.join(outdir, '**', pattern), recursive=True)
+            
         if matches:
-            # 返回对外提供服务的软连接路径以确保相对资源可用
-            return matches[0].replace(outdir, upload_dir) if outdir.endswith("/output") else matches[0]
-        return ""
+            real_path = matches[0]
+            # 返回逻辑 upload 路径给数据库（确保WebUI上的链接可用）以及物理路径供拷贝使用
+            upload_path = real_path.replace(outdir, upload_dir) if outdir.endswith("/output") else real_path
+            return real_path, upload_path
+        return "", ""
         
     # 优先找 Keep，如果没有再找 All (放宽匹配前缀以兼容带有 1_ 2_ 等前缀的老版本目录)
-    umap_path = find_file('**/*annotation/*CellType_Keep/*.UMAP-blank.png')
-    if not umap_path:
-        umap_path = find_file('*annotation/*CellType_All/*.UMAP-blank.png')
+    umap_real, umap_upload = find_file('**/*annotation/*CellType_Keep/*.UMAP-blank.png')
+    if not umap_real:
+        umap_real, umap_upload = find_file('*annotation/*CellType_All/*.UMAP-blank.png')
 
     # 细胞占比图
-    fraction_path = find_file('**/*celltype_fraction/*Keep.in.Sample-bar.png')
-    if not fraction_path:
-        fraction_path = find_file('*celltype_fraction/*All.in.Sample-bar.png')
+    fraction_real, fraction_upload = find_file('**/*celltype_fraction/*Keep.in.Sample-bar.png')
+    if not fraction_real:
+        fraction_real, fraction_upload = find_file('*celltype_fraction/*All.in.Sample-bar.png')
 
-    marker_table_path = find_file('**/*annotation/*CellType_All/*Cluster-CellType.anno.xls')
-    anno_png_path = find_file('*annotation/*CellType_Keep/*CellType.dotplot.png')
+    marker_table_real, marker_table_upload = find_file('**/*annotation/*CellType_All/*Cluster-CellType.anno.xls')
+    anno_png_real, anno_png_upload = find_file('*annotation/*CellType_Keep/*CellType.dotplot.png')
 
     # HTML 报告 (在 pipeline 中最终会被重命名跑在 outdir 根目录)
-    report_path = find_file('*CellType.Annotation_report.html')
+    report_real, report_upload = find_file('*CellType.Annotation_report.html')
     
     # === 开始独立图床静态文件备份复制过程 ===
     webui_dir = os.path.dirname(os.path.abspath(db_path))
@@ -139,21 +145,29 @@ def main():
     bk_anno_png = ""
     bk_report = ""
 
-    if umap_path and os.path.exists(umap_path):
+    if umap_real and os.path.exists(umap_real):
         bk_umap = os.path.join(assets_dir, 'UMAP_preview.png')
-        shutil.copy2(umap_path, bk_umap)
+        shutil.copy2(umap_real, bk_umap)
+    else:
+        raise FileNotFoundError(f"Error: 无法找到或拷贝 UMAP 图片到 assets，缺少源文件! 检查目录: {outdir}")
         
-    if fraction_path and os.path.exists(fraction_path):
+    if fraction_real and os.path.exists(fraction_real):
         bk_fraction = os.path.join(assets_dir, 'Fraction_bar.png')
-        shutil.copy2(fraction_path, bk_fraction)
+        shutil.copy2(fraction_real, bk_fraction)
+    else:
+        raise FileNotFoundError(f"Error: 无法找到或拷贝细胞占比图到 assets，缺少源文件! 检查目录: {outdir}")
         
-    if anno_png_path and os.path.exists(anno_png_path):
+    if anno_png_real and os.path.exists(anno_png_real):
         bk_anno_png = os.path.join(assets_dir, 'DotPlot.png')
-        shutil.copy2(anno_png_path, bk_anno_png)
+        shutil.copy2(anno_png_real, bk_anno_png)
+    else:
+        raise FileNotFoundError(f"Error: 无法找到或拷贝 DotPlot 气泡图到 assets，缺少源文件! 检查目录: {outdir}")
         
-    if report_path and os.path.exists(report_path):
+    if report_real and os.path.exists(report_real):
         bk_report = os.path.join(assets_dir, 'report.html')
-        shutil.copy2(report_path, bk_report)
+        shutil.copy2(report_real, bk_report)
+    else:
+        raise FileNotFoundError(f"Error: 无法找到或拷贝 HTML 报告到 assets，缺少源文件! 检查目录: {outdir}")
     print(f"[*] Assests successfully backed up to: {assets_dir}")
 
     print(f"[*] Initializing database at {db_path}...")
@@ -175,14 +189,14 @@ def main():
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         std_project_id, custom_project_id, crm_id, annotation_level, species, species_zh, tissue_type, tissue_type_zh, disease_type, seq_tech, analyst, notes,
-        outdir, umap_path, fraction_path, marker_table_path, anno_png_path, report_path, bk_umap, bk_fraction, bk_anno_png, bk_report
+        outdir, umap_upload, fraction_upload, marker_table_upload, anno_png_upload, report_upload, bk_umap, bk_fraction, bk_anno_png, bk_report
     ))
     
     # 2. 写入经验库 (解析 marker table)
-    if marker_table_path and os.path.exists(marker_table_path):
-        print(f"[*] Parsing marker table {marker_table_path} for experience database...")
+    if marker_table_real and os.path.exists(marker_table_real):
+        print(f"[*] Parsing marker table {marker_table_real} for experience database...")
         try:
-            with open(marker_table_path, 'r', encoding='utf-8') as mf:
+            with open(marker_table_real, 'r', encoding='utf-8') as mf:
                 reader = csv.DictReader(mf, delimiter='\t')
                 
                 # Check for required fields
