@@ -60,24 +60,24 @@ def generate_bash_script(config_file, script_outdir):
         cmd = f"{rscript_cmd} {script_dir}/scQC.R \\\n"
         
         if samples_file:
-            cmd += f"  --samples '{samples_file}' \\\n"
-            cmd += f"  --method '{method}' \\\n"
+            cmd += f"  --samples \"{samples_file}\" \\\n"
+            cmd += f"  --method \"{method}\" \\\n"
         elif rdsfile:
-            cmd += f"  --rds '{rdsfile}' \\\n"
+            cmd += f"  --rds \"{rdsfile}\" \\\n"
         else:
             print("Error: 必须在配置文件中指定 samples_file 或者 rdsfile 作为输入数据来源！")
             return
             
         if meta:
-            cmd += f"  --meta '{meta}' \\\n"
-        cmd += f"  --col_sample '{col_sample}' \\\n"
-        cmd += f"  --col_group '{col_group}' \\\n"
-        cmd += f"  --species '{species}' \\\n"
+            cmd += f"  --meta \"{meta}\" \\\n"
+        cmd += f"  --col_sample \"{col_sample}\" \\\n"
+        cmd += f"  --col_group \"{col_group}\" \\\n"
+        cmd += f"  --species \"{species}\" \\\n"
         cmd += f"  --doub_rate {doub_rate} \\\n"
         if mt_genes:
-            cmd += f"  --mt_genes '{mt_genes}' \\\n"
+            cmd += f"  --mt_genes \"{mt_genes}\" \\\n"
         if hb_genes:
-            cmd += f"  --hb_genes '{hb_genes}' \\\n"
+            cmd += f"  --hb_genes \"{hb_genes}\" \\\n"
         if qc_conf.get("run_doublet", False):
             cmd += f"  --run_doublet \\\n"
         if qc_conf.get("run_decontx", False):
@@ -115,8 +115,8 @@ def generate_bash_script(config_file, script_outdir):
             next_input_rds = user_rds
             
         cmd = f"{rscript_cmd} {script_dir}/scFilter.R \\\n"
-        cmd += f"  --rds '{next_input_rds}' \\\n"
-        cmd += f"  --col_sample '{col_sample}' \\\n"
+        cmd += f"  --rds \"{next_input_rds}\" \\\n"
+        cmd += f"  --col_sample \"{col_sample}\" \\\n"
         cmd += f"  --min_feat {min_feat} --max_feat {max_feat} \\\n"
         cmd += f"  --min_count {min_count} --max_count {max_count} \\\n"
         cmd += f"  --max_mt {max_mt} --max_hb {max_hb} \\\n"
@@ -174,23 +174,23 @@ def generate_bash_script(config_file, script_outdir):
             auto_kegg = "hsa"
         
         cmd = f"{rscript_cmd} {script_dir}/scCluster.R \\\n"
-        cmd += f"  --rds '{next_input_rds}' \\\n"
-        cmd += f"  --outdir '{cluster_out}' \\\n"
+        cmd += f"  --rds \"{next_input_rds}\" \\\n"
+        cmd += f"  --outdir \"{cluster_out}\" \\\n"
         if subset_col and subset_val:
-            cmd += f"  --subset_col '{subset_col}' --subset_val '{subset_val}' \\\n"
-        cmd += f"  --methods '{methods}' \\\n"
-        cmd += f"  --resolutions '{resolutions}' \\\n"
-        cmd += f"  --col_sample '{col_sample}' \\\n"
-        cmd += f"  --col_group '{col_group}' \\\n"
-        cmd += f"  --integrate_by '{integrate_by}' \\\n"
+            cmd += f"  --subset_col \"{subset_col}\" --subset_val \"{subset_val}\" \\\n"
+        cmd += f"  --methods \"{methods}\" \\\n"
+        cmd += f"  --resolutions \"{resolutions}\" \\\n"
+        cmd += f"  --col_sample \"{col_sample}\" \\\n"
+        cmd += f"  --col_group \"{col_group}\" \\\n"
+        cmd += f"  --integrate_by \"{integrate_by}\" \\\n"
         if do_cluster:
             cmd += f"  --do_cluster \\\n"
-            cmd += f"  --orgdb '{auto_orgdb}' \\\n"
-            cmd += f"  --organism_kegg '{auto_kegg}' \\\n"
+            cmd += f"  --orgdb \"{auto_orgdb}\" \\\n"
+            cmd += f"  --organism_kegg \"{auto_kegg}\" \\\n"
         if do_refmarker:
             cmd += f"  --do_refmarker \\\n"
         if refmarker_file:
-            cmd += f"  --refmarker_file '{refmarker_file}' \\\n"
+            cmd += f"  --refmarker_file \"{refmarker_file}\" \\\n"
         cmd += f"  --nfeatures {nfeatures} \\\n"
         cmd += f"  --npcs {npcs}\n\n"
         
@@ -242,22 +242,22 @@ def generate_bash_script(config_file, script_outdir):
             script_content += cmd
         else:
             cmd = f"{rscript_cmd} {script_dir}/scSubCluster.R \\\n"
-            cmd += f"  --rds '{next_input_rds}' \\\n"
-            cmd += f"  --outdir '{subcluster_out}' \\\n"
-            cmd += f"  --subset_col '{subset_col}' --subset_val '{subset_val}' \\\n"
-            cmd += f"  --methods '{methods}' \\\n"
-            cmd += f"  --resolutions '{resolutions}' \\\n"
-            cmd += f"  --col_sample '{col_sample}' \\\n"
-            cmd += f"  --col_group '{col_group}' \\\n"
-            cmd += f"  --integrate_by '{integrate_by}' \\\n"
+            cmd += f"  --rds \"{next_input_rds}\" \\\n"
+            cmd += f"  --outdir \"{subcluster_out}\" \\\n"
+            cmd += f"  --subset_col \"{subset_col}\" --subset_val \"{subset_val}\" \\\n"
+            cmd += f"  --methods \"{methods}\" \\\n"
+            cmd += f"  --resolutions \"{resolutions}\" \\\n"
+            cmd += f"  --col_sample \"{col_sample}\" \\\n"
+            cmd += f"  --col_group \"{col_group}\" \\\n"
+            cmd += f"  --integrate_by \"{integrate_by}\" \\\n"
             if do_cluster:
                 cmd += f"  --do_cluster \\\n"
-                cmd += f"  --orgdb '{auto_orgdb}' \\\n"
-                cmd += f"  --organism_kegg '{auto_kegg}' \\\n"
+                cmd += f"  --orgdb \"{auto_orgdb}\" \\\n"
+                cmd += f"  --organism_kegg \"{auto_kegg}\" \\\n"
             if do_refmarker:
                 cmd += f"  --do_refmarker \\\n"
             if refmarker_file:
-                cmd += f"  --refmarker_file '{refmarker_file}' \\\n"
+                cmd += f"  --refmarker_file \"{refmarker_file}\" \\\n"
             cmd += f"  --nfeatures {nfeatures} \\\n"
             cmd += f"  --npcs {npcs}\n\n"
             script_content += cmd
@@ -345,7 +345,7 @@ fi
             rscript_skip_flags += " ${RSCRIPT_SKIP_REFMARKER}"
 
         # === 直接调用分析脚本（不依赖 Makefile），读取主 YAML 配置 ===
-        cmd = f"{rscript_cmd} {script_dir}/scCellType.R --config '{config_file}' --outdir {celltype_out} --inputrds '{next_input_rds}'{rscript_skip_flags}\n\n"
+        cmd = f"{rscript_cmd} {script_dir}/scCellType.R --config '{config_file}' --outdir \"{celltype_out}\" --inputrds \"{next_input_rds}\"{rscript_skip_flags}\n\n"
         
         # === 动态组装 HTML 报告 ===
         python_path = celltype_conf.get("python_path", "python3")
@@ -368,8 +368,8 @@ fi
             
             # Seurat 对象多格式输出：rds / cloupe / h5ad
             cmd += f"{rscript_cmd} -e \"suppressMessages(library(SeuratDisk)); data <- readRDS('{celltype_out}/Rdata/Data-Annotation_CellType.rds'); SaveH5Seurat(data, filename = '{celltype_out}/Data_CellAnnotated.h5Seurat', overwrite=TRUE); Convert('{celltype_out}/Data_CellAnnotated.h5Seurat', dest = 'h5ad', overwrite=TRUE); unlink('{celltype_out}/Data_CellAnnotated.h5Seurat')\"\n"
-            louper_arg = f" --louper_path '{louper_path}'" if louper_path else ""
-            cmd += f"{rscript_cmd} {script_dir}/rds2cloupe.R -i {celltype_out}/Rdata/Data-Annotation_CellType.rds -o {celltype_out} -n Data_CellAnnotated_Cloupe{louper_arg}\n\n"
+            louper_arg = f" --louper_path \"{louper_path}\"" if louper_path else ""
+            cmd += f"{rscript_cmd} {script_dir}/rds2cloupe.R -i \"{celltype_out}/Rdata/Data-Annotation_CellType.rds\" -o \"{celltype_out}\" -n Data_CellAnnotated_Cloupe{louper_arg}\n\n"
         else:
             cmd += "# >>> do_report 为 false，代表注释处于检查确认的中间态，在此跳过耗时的动态图文 HTML 报告渲染及 h5ad/cloupe 格式转换步骤 <<<\n\n"
         
