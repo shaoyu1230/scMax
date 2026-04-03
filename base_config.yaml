@@ -1,0 +1,21 @@
+# ==============================================================================
+# scMax 基础环境配置文件 (Base Config)
+# 此文件用于存放所有实验项目共用的基础环境变量、物种说明和公共挂载目录。
+# 个人分析的特定参数（如 resolurions, do_cluster 等）请在执行 scMax.py 时通过 CLI 参数传入。
+# ==============================================================================
+
+global_outdir: "./scMax_Out"
+Rscript_path: "Rscript"
+
+# ------ 全局核心元数据配置 ------
+Database_Info:
+  run: true                 # 是否连通知识图谱与后台数据库登记
+  # 知识图谱信息用于前台大屏图示
+  Project_Name: "scMax_Demo" 
+  Species: "Homo sapiens" 
+  Organ: "PBMC"           
+  Disease: "Healthy"      
+  
+  # ------ 关键影响流程分析的底层依赖定义 ------
+  species: "Human"          # QC时判定需要映射的内部预定义特征 (Human / Mouse)
+  annotation_level: "MajorType" # 注释的层级特征目录名识别
