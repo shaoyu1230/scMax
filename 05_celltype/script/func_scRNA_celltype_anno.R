@@ -576,7 +576,7 @@ anno_mks_plot2 <- function(data.f,annofile,celltype_col="CellType",celltype.keep
                      column_names_rot = 60,cluster_columns = F,
                      assay = "RNA",anno_terms = FALSE,nlabel=0,add_bg = FALSE)
   ht$plot
-  wd <- max(9,length(unique(data@meta.data[,celltype_col]))*0.9)
+  wd <- max(9,length(unique(data.f@meta.data[,celltype_col]))*0.9)
   ht <- max(length(unique(df_unique$Markers))*0.3,8)
   ggsave(paste0(outdir,"/3_CellType.heatmap.png"),width=wd,height=ht)
   ggsave(paste0(outdir,"/3_CellType.heatmap.pdf"),width=wd,height=ht)
