@@ -239,7 +239,6 @@ if(do_annotation){
     celltype_colors <- palette_scp(unique(data_anno@meta.data[,celltype_col]),palette='Paired',NA_keep=TRUE)
   }
 
-  celltype_umap_plots(data_anno,outdir=paste0(outdir,'/annotation/CellType_All'),celltype_col=celltype_col,groups=plot_groups,palcolor=celltype_colors)
   df <- read.table(annofile,sep='\t',header=TRUE)
   cols <- intersect(c('Cluster','CellType','Markers','reference','description'), colnames(df))
   df <- df[,cols, drop = FALSE]
@@ -265,7 +264,6 @@ if(do_annotation){
   data.f@meta.data[,celltype_col] <- droplevels(data.f@meta.data[,celltype_col])
   metaraw.f <- metaraw[keep.cells,]
 
-  celltype_umap_plots(data.f,outdir=paste0(outdir,'/annotation/CellType_Keep'),celltype_col=celltype_col,groups=plot_groups,palcolor=celltype_colors)
   if('Markers' %in% colnames(anno.df)){
     anno_mks_plot2(data.f,annofile,celltype_col=celltype_col,celltype.keep=celltype.keep,outdir=paste0(outdir,'/annotation/CellType_Keep'))
   }
