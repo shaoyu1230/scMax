@@ -470,7 +470,7 @@ python3 {os.path.join(base_dir, "scMax_db_manager.py")} -c '{os.path.abspath(con
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="生成 scMax 分析流程的 bash 脚本")
     parser.add_argument("-c", "--config", required=True, help="YAML 配置文件")
-    parser.add_argument("-o", "--outdir", required=True, help="生成的 bash 运行脚本所存放的目录位置")
+    parser.add_argument("-o", "--outdir", default=".", help="生成的 bash 运行脚本所存放的目录位置 (默认当前目录)")
     args = parser.parse_args()
     
     generate_bash_script(args.config, args.outdir)
