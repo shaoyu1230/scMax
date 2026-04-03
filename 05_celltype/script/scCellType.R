@@ -20,7 +20,7 @@ bindir <- this.path::this.dir()
 source(file.path(bindir,'func_scRNA_celltype_anno.R'))
 
 parser = argparse::ArgumentParser(description = 'Unified script for cluster plots, ref markers, annotation and celltype plots.')
-parser$add_argument('-c', '--config', dest = 'config', required = TRUE, help = 'main YAML config file')
+parser$add_argument('-c', '--config', dest = 'config', default = '', help = 'main YAML config file (optional backup)')
 parser$add_argument('-o', '--outdir', dest = 'outdir', required = TRUE, help = 'output directory')
 parser$add_argument('--inputrds', dest = 'inputrds', default = '', help = 'override input rds path (optional)')
 parser$add_argument('--annotated_rds', dest = 'annotated_rds', default = '', help = 'use an existing annotated rds for celltype plots/DE')
@@ -31,16 +31,32 @@ parser$add_argument('--skip_refmarker', dest = 'skip_refmarker', action = 'store
 parser$add_argument('--do_annotation', dest = 'do_annotation', action = 'store_true', help = 'run manual annotation')
 parser$add_argument('--do_celltype', dest = 'do_celltype', action = 'store_true', help = 'run celltype umap plots and fraction plots')
 parser$add_argument('--do_celltype_de', dest = 'do_celltype_de', action = 'store_true', help = 'run celltype DE and enrichment')
+parser$add_argument('--annofile', dest = 'annofile', default = '', help = 'Annotation file')
+parser$add_argument('--cluster_col', dest = 'cluster_col', default = '', help = 'Cluster column name')
+parser$add_argument('--celltype_col', dest = 'celltype_col', default = '', help = 'Celltype column name')
+parser$add_argument('--col_sample', dest = 'col_sample', default = '', help = 'Sample column name')
+parser$add_argument('--col_group', dest = 'col_group', default = '', help = 'Group column name')
+parser$add_argument('--sample_order', dest = 'sample_order', default = '', help = 'Order of samples')
+parser$add_argument('--group_order', dest = 'group_order', default = '', help = 'Order of groups')
+parser$add_argument('--cluster_colors', dest = 'cluster_colors', default = '', help = 'Cluster colors')
+parser$add_argument('--celltype_levels', dest = 'celltype_levels', default = '', help = 'Celltype levels order')
+parser$add_argument('--celltype_colors', dest = 'celltype_colors', default = '', help = 'Celltype colors')
+parser$add_argument('--refmarker_file', dest = 'refmarker_file', default = '', help = 'Ref marker file')
+parser$add_argument('--metacsv', dest = 'metacsv', default = '', help = 'Meta csv file')
 
 opt = parser$parse_args()
 
-cfg <- yaml::read_yaml(opt$config)
-ct_conf <- cfg[['05_celltype']]
-if (is.null(ct_conf)) {
-  stop('No 05_celltype section found in main config!')
+ct_conf <- list()
+db_conf <- list()
+if (opt$config != '') {
+  cfg <- yaml::read_yaml(opt$config)
+  if (!is.null(cfg[['05_celltype']])) {
+    ct_conf <- cfg[['05_celltype']]
+  }
+  if (!is.null(cfg[['Database_Info']])) {
+    db_conf <- cfg[['Database_Info']]
+  }
 }
-
-db_conf <- cfg[['Database_Info']]
 
 outdir <- opt$outdir
 if(!dir.exists(outdir)){dir.create(outdir, recursive = TRUE)}
@@ -51,18 +67,18 @@ if (is.null(inputrds) || inputrds == '') {
 }
 annotated_rds <- opt$annotated_rds
 
-annofile <- ct_conf$annofile
-clustercol <- ct_conf$cluster_col
-celltype_col <- ct_conf$celltype_col
-sample_col <- ct_conf$col_sample
-group_col <- ct_conf$col_group
-sample_order <- ct_conf$sample_order
-group_order <- ct_conf$group_order
-cluster_colors <- ct_conf$cluster_colors
-celltype_levels <- ct_conf$celltype_levels
-celltype_colors <- ct_conf$celltype_colors
-refmarker.file <- ct_conf$refmarker_file
-metacsv <- ct_conf$metacsv
+annofile <- if (opt$annofile != '') opt$annofile else ct_conf$annofile
+clustercol <- if (opt$cluster_col != '') opt$cluster_col else ct_conf$cluster_col
+celltype_col <- if (opt$celltype_col != '') opt$celltype_col else ct_conf$celltype_col
+sample_col <- if (opt$col_sample != '') opt$col_sample else ct_conf$col_sample
+group_col <- if (opt$col_group != '') opt$col_group else ct_conf$col_group
+sample_order <- if (opt$sample_order != '') opt$sample_order else ct_conf$sample_order
+group_order <- if (opt$group_order != '') opt$group_order else ct_conf$group_order
+cluster_colors <- if (opt$cluster_colors != '') opt$cluster_colors else ct_conf$cluster_colors
+celltype_levels <- if (opt$celltype_levels != '') opt$celltype_levels else ct_conf$celltype_levels
+celltype_colors <- if (opt$celltype_colors != '') opt$celltype_colors else ct_conf$celltype_colors
+refmarker.file <- if (opt$refmarker_file != '') opt$refmarker_file else ct_conf$refmarker_file
+metacsv <- if (opt$metacsv != '') opt$metacsv else ct_conf$metacsv
 
 if (!is.null(group_col)) {
   group_col <- strsplit(group_col, split = ',')[[1]]
@@ -91,14 +107,6 @@ do_refmarker <- (isTRUE(opt$do_refmarker) || isTRUE(ct_conf$do_refmarker)) && !i
 do_annotation <- isTRUE(opt$do_annotation) || isTRUE(ct_conf$do_annotation)
 do_celltype <- isTRUE(opt$do_celltype) || isTRUE(ct_conf$do_celltype)
 do_celltype_de <- isTRUE(opt$do_celltype_de) || isTRUE(ct_conf$do_celltype_de)
-
-if (!(do_cluster || do_refmarker || do_annotation || do_celltype || do_celltype_de)) {
-  do_cluster <- TRUE
-  do_refmarker <- TRUE
-  do_annotation <- TRUE
-  do_celltype <- TRUE
-  do_celltype_de <- TRUE
-}
 
 if ((do_celltype || do_celltype_de) && !do_annotation && (is.null(annotated_rds) || annotated_rds == '')) {
   stop('do_celltype/do_celltype_de requires do_annotation or --annotated_rds.')
