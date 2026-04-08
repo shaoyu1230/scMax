@@ -204,6 +204,10 @@ for (method in methods) {
   saveRDS(tmp, file.path(method_dir, paste0(method, "_integrate_base.rds")))
   
   cat("=> [3] 开展多分辨率尝试与细胞聚类...\n")
+  
+  # 捕获刚刚生成的 graph 名称（如果是 CCA/RPCA 则为 integrated_snn，如果是 harmony/none 则为 RNA_snn）
+  active_graph <- paste0(DefaultAssay(tmp), "_snn")
+  
   DefaultAssay(tmp) <- "RNA"
   
   for (res in resolutions) {
@@ -212,7 +216,7 @@ for (method in methods) {
     res_dir <- file.path(method_dir, res_name)
     dir.create(res_dir, showWarnings=FALSE, recursive=TRUE)
     
-    tmp <- FindClusters(tmp, resolution = res)
+    tmp <- FindClusters(tmp, resolution = res, graph.name = active_graph)
     # 重编号，避免混乱的因子级
     tmp@meta.data$seurat_clusters <- factor(as.numeric(as.character(tmp@meta.data$seurat_clusters)))
     tmp[[res_name]] <- tmp$seurat_clusters

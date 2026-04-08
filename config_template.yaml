@@ -28,7 +28,7 @@ global_outdir: "/Users/angela/Documents/00_annoroad/06_Development/scMax/test_ou
   metadatafile: "matadata.csv" 
   
   # 数据质控和批次效应参数
-  species: "mouse"          # 可选: human, mouse, other
+  species: "mouse"          # 可选: human, mouse, other (仅针对本步骤质控找线粒体等基因识别前缀用，无关于后端富集)
   doub_rate: 0.076          # 预期双细胞比例
   mt_genes: ""              # 逗号分隔的线粒体基因 (如需要自定义)
   hb_genes: ""              # 逗号分隔的血红蛋白基因
@@ -161,7 +161,7 @@ Database_Info:
   custom_project_id: "A042"         # 个性化项目编号 (如 A042)
   crm_id: "AN20231001"            # crm下单编号 (一般AN开头)
   annotation_level: "MajorType"   # 分群层次 (例如: MajorType, SubType-T cells)
-  species: "Human"                # 物种英文信息
+  species: "Human"                # 物种英文信息 (重要：不仅用作数据库大屏归档，还会决定 03~05 阶段自动挂载哪种物种GO/KEGG富集库)
   species_zh: "人"                 # 物种中文信息
   tissue_type: "Heart"            # 组织类型英文
   tissue_type_zh: "心脏"           # 组织类型中文
