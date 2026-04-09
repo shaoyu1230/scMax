@@ -1,6 +1,7 @@
 import yaml
 import argparse
 import os
+from datetime import datetime
 
 def get_base_params(config):
     global_outdir = config.get("global_outdir", "./scMax_Out")
@@ -240,6 +241,55 @@ def generate_subcluster_cmd(config, rscript_cmd, base_dir, next_input_rds):
     next_res = os.path.join(subcluster_out, methods.split(',')[0], f"res{resolutions.split(',')[0]}", f"{methods.split(',')[0]}_integrate_clustered.rds")
     return script_content, next_res
 
+def generate_differential_cmd(config, rscript_cmd, base_dir, next_input_rds):
+    diff_conf = config.get("06_differential") or {}
+    if not diff_conf.get("run", False):
+        return "# Skip 06_differential\n\n", next_input_rds
+
+    script_content = "#" + "="*40 + "\n"
+    script_content += "# Step 6: 06_differential (差异表达分析挖掘模式 A/B)\n"
+    script_content += "#" + "="*40 + "\n"
+    script_dir = os.path.join(base_dir, "06_differential", "script")
+    
+    user_rds = diff_conf.get("rdsfile", "")
+    if user_rds:
+        next_input_rds = user_rds
+    
+    method = diff_conf.get("method", "all_markers")
+    groupby = diff_conf.get("groupby", "CellType")
+    split_by = diff_conf.get("split_by", "CellType")
+    cmp_file = diff_conf.get("cmp_file", "")
+    do_enrich = diff_conf.get("do_enrich", True)
+    
+    diff_out = os.path.join("$OUTDIR", f"06_differential_{method}")
+    script_content += f"if [ -d {diff_out} ]; then rm -rf {diff_out}; fi\n"
+    script_content += f"mkdir -p {diff_out}\n"
+    
+    db_conf = config.get("Database_Info", {})
+    species = db_conf.get("species", "Human")
+    if species.lower() == "mouse":
+        auto_orgdb = "org.Mm.eg.db"
+        auto_kegg = "mmu"
+    else:
+        auto_orgdb = "org.Hs.eg.db"
+        auto_kegg = "hsa"
+        
+    cmd = f"{rscript_cmd} {script_dir}/scDifferential.R \\\n"
+    cmd += f"  --rds \"{next_input_rds}\" \\\n"
+    cmd += f"  --outdir \"{diff_out}\" \\\n"
+    cmd += f"  --method \"{method}\" \\\n"
+    cmd += f"  --groupby \"{groupby}\" \\\n"
+    cmd += f"  --split_by \"{split_by}\" \\\n"
+    if cmp_file:
+        cmd += f"  --cmp_file \"{cmp_file}\" \\\n"
+    if do_enrich:
+        cmd += f"  --do_enrich \\\n"
+    cmd += f"  --orgdb \"{auto_orgdb}\" \\\n"
+    cmd += f"  --organism_kegg \"{auto_kegg}\"\n\n"
+    
+    script_content += cmd
+    return script_content, next_input_rds
+
 def generate_celltype_cmd(config, rscript_cmd, base_dir, next_input_rds, config_file):
     celltype_conf = config.get("05_celltype") or {}
     if not celltype_conf.get("run", False):
@@ -399,13 +449,17 @@ def generate_bash_script_from_dict(config, script_outdir, config_file="base_conf
     step_content, next_input_rds, celltype_out = generate_celltype_cmd(config, rscript_cmd, base_dir, next_input_rds, config_file)
     script_content += step_content
     
+    step_content, next_input_rds = generate_differential_cmd(config, rscript_cmd, base_dir, next_input_rds)
+    script_content += step_content
+    
     if celltype_out:
         script_content += generate_db_cmd(config, base_dir, celltype_out, config_file)
         
     script_content += "\necho 'scMax Pipeline completed successfully!'\n"
     
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     step_suffix = "_" + "_".join(run_steps) if run_steps else ""
-    sh_file = os.path.join(script_outdir, f"run_scMax_pipeline{step_suffix}.sh")
+    sh_file = os.path.join(script_outdir, f"run_scMax_pipeline{step_suffix}_{timestamp}.sh")
     with open(sh_file, "w", encoding='utf-8') as f:
         f.write(script_content)
     os.chmod(sh_file, 0o755)
@@ -424,6 +478,9 @@ def generate_bash_script(config_file, script_outdir):
         run_steps.append("03")
     if "04_subcluster" in config and config.get("04_subcluster", {}).get("run", False):
         run_steps.append("04")
+    
+    if "06_differential" in config and config.get("06_differential", {}).get("run", False):
+        run_steps.append("06")
     
     celltype_conf = config.get("05_celltype", {})
     if "05_celltype" in config and celltype_conf.get("run", False):

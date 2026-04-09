@@ -152,6 +152,19 @@ global_outdir: "/Users/angela/Documents/00_annoroad/06_Development/scMax/test_ou
 
 
 # ==========================================================
+# 06_differential (差异分析挖掘模块)
+# ==========================================================
+06_differential:
+  run: false                # 是否运行此模块
+  rdsfile: ""               # 强制指定的输入 RDS (留空则自动继承上一级)
+  method: "all_markers"      # 差异模式: all_markers (方案A: 找指定列的所有组Marker), group_comparison (方案B: 亚群内部进行组间两两比较)
+  groupby: "CellType"       # 差异比较的分类列 (如: CellType 或 Group)
+  split_by: "CellType"      # [模式B专用] 亚群拆分依据列 (通常是 CellType 或 seurat_clusters)
+  cmp_file: ""              # [模式B专用] Tab分隔的比较对列表文件 (每行两列: GroupA GroupB)
+  do_enrich: true           # 是否执行 GO/KEGG 全自动化富集分析
+
+
+# ==========================================================
 # 报告聚合与中央数据库信息注册（Web UI）
 # ==========================================================
 Database_Info:

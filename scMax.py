@@ -157,6 +157,19 @@ def main():
     parser_celltype.add_argument("--force_clean", action="store_true", help="是否暴力格式化目标输出位点")
 
     # ---------------------------------------------------------
+    # 06_differential
+    # ---------------------------------------------------------
+    parser_diff = subparsers.add_parser("differential", help="深度差异分析挖掘 (06_differential)")
+    parser_diff.add_argument("-c", "--config", default="base_config.yaml", help="基础配置")
+    parser_diff.add_argument("-o", "--outdir", default=".", help="输出目录")
+    parser_diff.add_argument("--rds", required=True, help="输入 Seurat RDS 对象")
+    parser_diff.add_argument("--method", default="all_markers", choices=["all_markers", "group_comparison"], help="差异模式: all_markers 或 group_comparison")
+    parser_diff.add_argument("--groupby", default="CellType", help="比较列 (如 Group)")
+    parser_diff.add_argument("--split_by", default="CellType", help="[模式B] 亚群拆分依据列")
+    parser_diff.add_argument("--cmp_file", default="", help="[模式B] 比较列表文件 (.xls/.txt)")
+    parser_diff.add_argument("--do_enrich", action="store_true", help="是否执行 GO/KEGG 富集")
+
+    # ---------------------------------------------------------
     # run_all 向上兼容与统一 YAML
     # ---------------------------------------------------------
     parser_all = subparsers.add_parser("run_all", help="完全保留传统全栈配置文件驱动的串联流水执行")
@@ -255,6 +268,17 @@ def main():
             "force_clean": args.force_clean
         }
         run_step("05_celltype", args, conf)
+
+    elif args.command == "differential":
+        conf = {
+            "rdsfile": args.rds,
+            "method": args.method,
+            "groupby": args.groupby,
+            "split_by": args.split_by,
+            "cmp_file": args.cmp_file,
+            "do_enrich": args.do_enrich
+        }
+        run_step("06_differential", args, conf)
 
 if __name__ == "__main__":
     main()
