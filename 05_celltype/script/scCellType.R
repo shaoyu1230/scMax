@@ -121,7 +121,10 @@ if(!dir.exists(paste0(outdir,'/Rdata'))){dir.create(paste0(outdir,'/Rdata'),recu
 if(!dir.exists(paste0(outdir,'/tmp'))){dir.create(paste0(outdir,'/tmp'),recursive = TRUE)}
 if(do_cluster && !dir.exists(paste0(outdir,'/cluster_characterization'))){dir.create(paste0(outdir,'/cluster_characterization'))}
 if(do_refmarker && !dir.exists(paste0(outdir,'/marker_expression'))){dir.create(paste0(outdir,'/marker_expression'))}
-if(do_annotation && !dir.exists(paste0(outdir,'/annotation'))){dir.create(paste0(outdir,'/annotation'))}
+if(do_annotation){
+  dir.create(paste0(outdir,'/annotation/CellType_All'), recursive = TRUE, showWarnings = FALSE)
+  dir.create(paste0(outdir,'/annotation/CellType_Keep'), recursive = TRUE, showWarnings = FALSE)
+}
 if(do_celltype && !dir.exists(paste0(outdir,'/celltype_fraction'))){dir.create(paste0(outdir,'/celltype_fraction'))}
 if(do_celltype && !dir.exists(paste0(outdir,'/celltype_characterization'))){dir.create(paste0(outdir,'/celltype_characterization'))}
 
@@ -176,6 +179,12 @@ if(length(plot_groups) > length(columns)){
 if(!is.null(clustercol) && clustercol != ''){
   if(clustercol %in% colnames(data@meta.data)){
     data$seurat_clusters <- data@meta.data[,clustercol]
+    # 强制进行自然混合排序(保证 1, 2, 10 的正确顺序)
+    suppressMessages(library(stringr))
+    raw_clusters <- as.character(data$seurat_clusters)
+    sorted_lvls <- stringr::str_sort(unique(raw_clusters), numeric = TRUE)
+    data$seurat_clusters <- factor(raw_clusters, levels = sorted_lvls)
+    data@meta.data[,clustercol] <- data$seurat_clusters
   } else {
     stop(paste0(clustercol, ' Not in the metadata!'))
   }
