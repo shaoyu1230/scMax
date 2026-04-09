@@ -3,9 +3,30 @@ import argparse
 import os
 from datetime import datetime
 
+# 全局默认配置环境：当配置文件中缺失对应项时，系统将回退到这些默认值
+DEFAULT_CONFIG = {
+    "Rscript_path": "Rscript",      # 默认调用系统 PATH 中的 Rscript
+    "python_path": "python3",       # 默认调用系统 PATH 中的 python3
+    "jupyter_path": "jupyter",      # 默认调用系统 PATH 中的 jupyter
+    "global_outdir": "./scMax_Out",  # 默认输出根目录
+    "Database_Info": {
+        "run": False,
+        "species": "Human",
+        "annotation_level": "MajorType"
+    }
+}
+
+def get_config_snapshot_sh(step_conf, target_file):
+    """生成一段将配置字典写入 YAML 文件的 Bash 代码"""
+    if not step_conf:
+        return ""
+    yaml_str = yaml.dump(step_conf, default_flow_style=False, allow_unicode=True)
+    # 使用 cat << 'EOF' 避免 bash 对内部变量的转义
+    return f"\n# 自动记录参数快照 (用于结果溯源)\ncat << 'EOF' > {target_file}\n{yaml_str}EOF\n"
+
 def get_base_params(config):
-    global_outdir = config.get("global_outdir", "./scMax_Out")
-    rscript_cmd = config.get("Rscript_path", "Rscript")
+    global_outdir = config.get("global_outdir", DEFAULT_CONFIG["global_outdir"])
+    rscript_cmd = config.get("Rscript_path", DEFAULT_CONFIG["Rscript_path"])
     base_dir = os.path.dirname(os.path.abspath(__file__))
     return global_outdir, rscript_cmd, base_dir
 
@@ -29,6 +50,9 @@ def generate_qc_cmd(config, rscript_cmd, base_dir, next_input_rds):
     qc_out = os.path.join("$OUTDIR", "01_scQC_out")
     script_content += f"if [ -d {qc_out} ]; then rm -rf {qc_out}; fi\n"
     script_content += f"mkdir -p {qc_out}\n"
+    
+    # 注入配置快照
+    script_content += get_config_snapshot_sh(qc_conf, os.path.join(qc_out, "config_snapshot.yaml"))
     
     samples_file = qc_conf.get("samples_file", "")
     method = qc_conf.get("method", "merge")
@@ -82,6 +106,9 @@ def generate_filter_cmd(config, rscript_cmd, base_dir, next_input_rds):
     script_content += f"if [ -d {filter_out} ]; then rm -rf {filter_out}; fi\n"
     script_content += f"mkdir -p {filter_out}\n"
     
+    # 注入配置快照
+    script_content += get_config_snapshot_sh(filter_conf, os.path.join(filter_out, "config_snapshot.yaml"))
+    
     col_sample = filter_conf.get("col_sample", "Sample")
     min_feat = filter_conf.get("min_feat", 200)
     max_feat = filter_conf.get("max_feat", 1000000000)
@@ -122,6 +149,9 @@ def generate_cluster_cmd(config, rscript_cmd, base_dir, next_input_rds):
     cluster_out = os.path.join("$OUTDIR", "03_cluster_out")
     script_content += f"if [ -d {cluster_out} ]; then rm -rf {cluster_out}; fi\n"
     script_content += f"mkdir -p {cluster_out}\n"
+    
+    # 注入配置快照
+    script_content += get_config_snapshot_sh(cluster_conf, os.path.join(cluster_out, "config_snapshot.yaml"))
     
     user_rds = cluster_conf.get("rdsfile", "")
     if user_rds:
@@ -195,6 +225,9 @@ def generate_subcluster_cmd(config, rscript_cmd, base_dir, next_input_rds):
     script_content += f"if [ -d {subcluster_out} ]; then rm -rf {subcluster_out}; fi\n"
     script_content += f"mkdir -p {subcluster_out}\n"
     
+    # 注入配置快照
+    script_content += get_config_snapshot_sh(subcluster_conf, os.path.join(subcluster_out, "config_snapshot.yaml"))
+    
     methods = subcluster_conf.get("methods", "re_harmony,original_integrated")
     resolutions = str(subcluster_conf.get("resolutions", "0.2,0.4"))
     col_sample = subcluster_conf.get("col_sample", "Sample")
@@ -265,6 +298,9 @@ def generate_differential_cmd(config, rscript_cmd, base_dir, next_input_rds):
     script_content += f"if [ -d {diff_out} ]; then rm -rf {diff_out}; fi\n"
     script_content += f"mkdir -p {diff_out}\n"
     
+    # 注入配置快照
+    script_content += get_config_snapshot_sh(diff_conf, os.path.join(diff_out, "config_snapshot.yaml"))
+    
     db_conf = config.get("Database_Info", {})
     species = db_conf.get("species", "Human")
     if species.lower() == "mouse":
@@ -311,6 +347,9 @@ def generate_celltype_cmd(config, rscript_cmd, base_dir, next_input_rds, config_
         
     script_content += f"mkdir -p {celltype_out}\n"
     script_content += f"mkdir -p {celltype_upload}\n"
+    
+    # 注入配置快照
+    script_content += get_config_snapshot_sh(celltype_conf, os.path.join(celltype_out, "config_snapshot.yaml"))
     
     user_rds = celltype_conf.get("rdsfile", "")
     if user_rds:

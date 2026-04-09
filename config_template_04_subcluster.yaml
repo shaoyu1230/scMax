@@ -1,0 +1,25 @@
+# scMax 04_subcluster (特定簇深度细分) 配置模板
+# ==========================================================
+
+04_subcluster:
+  run: true
+  rdsfile: ""               # 留空则默认继承上一阶段 (03_cluster) 产出
+  
+  # --- 细分目标选择 ---
+  subset_col: "seurat_clusters" # 提取依据列 (如 seurat_clusters, MajorType)
+  subset_val: "1,3,5"       # 要提取并细分的簇/类型编号 (逗号分隔)
+  
+  # --- 细分聚类与去批次方案 ---
+  # re_harmony: 重新进行归一化、特征选择并 Harmony 去批次
+  # original_integrated: 保留全局整合结果，直接提取进行重聚类
+  methods: "re_harmony,original_integrated"
+  
+  resolutions: "0.2,0.4,0.6" # 亚群分辨率扫参
+  
+  col_sample: "Sample"      # 样本列名
+  col_group: "Group"        # 分组列名
+  integrate_by: "Sample"    # 去批次依据列
+
+# 物种信息 (用于计算子簇 Marker 时的富集背景)
+Database_Info:
+  species: "Human" 

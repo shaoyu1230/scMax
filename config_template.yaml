@@ -1,11 +1,14 @@
 # scMax 流程配置文件
 # ====================
 
-# 基础环境配置
+# 基础环境配置（可选）
 # --------------------
-# 如果 Rscript 没有加入环境变量，或者需要使用特定 conda 虚拟环境的 Rscript，请在此填写绝对路径
+# scMax默认环境已配置在scMax.config中，如需更改可在此处指定
 # 例如: "/path/to/miniconda3/envs/sc_env/bin/Rscript"
-Rscript_path: "Rscript"
+Rscript_path: ""
+jupyter_path: ""
+python_path: ""
+louper_path: ""
 
 # 分析总输出根目录（如目录不存在将自动创建）
 global_outdir: "/Users/angela/Documents/00_annoroad/06_Development/scMax/test_output_v2"
@@ -143,13 +146,6 @@ global_outdir: "/Users/angela/Documents/00_annoroad/06_Development/scMax/test_ou
   # ------ 富集物种配置 ------
   orgdb: ""                 # (针对人/鼠外物种)自定义富集orgdb，例如 "org.Rn.eg.db"，默认为空利用推断
   organism_kegg: ""         # (针对人/鼠外物种)自定义富集kegg简称，例如 "rno"
-  
-  # ------ 多格式导出 & 报告渲染环境 ------
-  # Seurat 对象默认同时导出 rds / h5ad / cloupe
-  louper_path: ""           # 如 loupeR 找不到 louper 可执行文件，可在此指定完整路径
-  python_path: "python3"    # 拼装态报表基础环境（需安装基本模块）
-  jupyter_path: "jupyter"   # 用于将 ipynb 转 html 的 nbconvert 环境路径
-
 
 # ==========================================================
 # 06_differential (差异分析挖掘模块)

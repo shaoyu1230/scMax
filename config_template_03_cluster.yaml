@@ -1,0 +1,31 @@
+# scMax 03_cluster (降维聚类核心) 配置模板
+# ==========================================================
+
+03_cluster:
+  run: true
+  
+  # --- 输入与筛选 ---
+  rdsfile: ""               # 留空则默认继承上一阶段 (02_filter) 产出
+  subset_col: ""            # [可选] 聚类前再次筛选子集的依据列 
+  subset_val: ""            # [可选] 筛选的具体数值 (如 "CD4_T,CD8_T")
+  
+  # --- 整合去批次与特征选择 ---
+  methods: "harmony,rpca"   # 尝试的整合算法 (用逗号分隔: harmony,rpca,cca,mnn,none)
+  col_sample: "Sample"      # 样本列名
+  col_group: "Group"        # 分组列名
+  integrate_by: "Sample"    # 实际执行去批次整合时的依据列名
+  
+  nfeatures: 2000           # 高变基因选择数量 (HVGs)
+  npcs: 30                  # 用于降维的 PCA 主成分数
+  
+  # --- 聚类扫参方案 ---
+  do_cluster: true          # 执行聚类
+  resolutions: "0.2,0.4,0.6,0.8,1.0" # 分辨率扫参列表
+  
+  # --- 特征基因计算 ---
+  do_refmarker: true        # 是否自动计算各簇特征 Marker 基因 (AllMarkers)
+  refmarker_file: ""        # [可选] 提供辅助参考 Marker 文件 (TSV/CSV)
+
+# 决定富集库挂载
+Database_Info:
+  species: "Human"          # Human / Mouse

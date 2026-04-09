@@ -1,0 +1,48 @@
+# scMax 05_celltype (专家注释、数据分发与交互报告) 配置模板
+# ==========================================================
+
+# 1. 模块 05 核心参数 (注释与绘图控制)
+# --------------------
+05_celltype:
+  run: true
+  
+  # --- 输入来源与列映射 ---
+  rdsfile: ""               # 需要进行打签的目标 RDS（一般是 03 或 04 的终产物）
+  annofile: "annotation.xlsx" # [必填] 专家手动注释对应表格（包含 Cluster, CellType）
+  cluster_col: "res0.4"     # 被合并转换的数字标签列名（如：res0.4, seurat_clusters）
+  celltype_col: "CellType"  # 产生的注释列名字
+  
+  col_sample: "Sample"      # 拆分展示时依赖的样本列
+  col_group: ""             # [可选] 基于分组条件画图时的分类列
+  
+  # --- 排序与展示 (可选) ---
+  sample_order: ""          # 样本顺序，逗号分隔，如 "S1,S2,S3"
+  group_order: ""           # 分组顺序，如 "Control,Treat"
+  cluster_colors: ""        # 集群自定义颜色
+  celltype_levels: ""       # 细胞类型顺序，如 "T cell,B cell"
+  celltype_colors: ""       # 细胞类型自定义颜色
+  celltype_keep: ""         # 细胞类型保留列表（可选）
+
+  # --- 执行流程开关 ---
+  do_cluster: true          # 绘制 Cluster 相关图表及差异/富集
+  do_refmarker: false        # 绘制参考 Marker 点阵图
+  refmarker_file: ""        # 参考 Marker 列表文件 (TSV/CSV)
+  do_annotation: false       # 仅执行注释添加
+  do_celltype: false         # 绘制 CellType UMAP 和 比例图
+  do_celltype_de: false     # 是否计算已注释细胞类型的 Marker 并做富集（耗时）
+  do_report: false           # 是否生成 HTML 动态交互可视化报告
+  
+  force_clean: false        # 是否运行前强制清空 05 输出目录
+  annotated_rds: ""         # [可选] 若已有注释过的 RDS，可直接读取路径跳过 do_annotation
+
+# 2. 报告元数据与数据库注册
+# --------------------
+# 💡 提示：CRM号与分群层次是结题报告与数据库索引的关键字段
+Database_Info:
+  run: false                 # 是否连通数据库大盘
+  #std_project_id: "PM-X"    # 标分项目编号
+  crm_id: "AN2026xxxxxx"    # CRM 下单单号
+  annotation_level: "MajorType" # 分群深度层级 (如: MajorType, SubType)
+  #species: "Human"          # 物种 (Human/Mouse)
+  #analyst: "shaoyusong"    # 分析人
+  notes: ""

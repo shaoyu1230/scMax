@@ -5,12 +5,55 @@ import os
 import yaml
 import scMax_pipeline
 
+def merge_configs(base, extra):
+    """递归合并两个字典配置"""
+    for key, value in extra.items():
+        if isinstance(value, dict) and key in base and isinstance(base[key], dict):
+            merge_configs(base[key], value)
+        else:
+            base[key] = value
+
 def load_base_config(config_path):
+    import copy
+    # 1. Level 1: 内置极简兜底 (从 pipeline 模块读取)
+    final_config = copy.deepcopy(scMax_pipeline.DEFAULT_CONFIG)
+    
+    # 2. Level 2: 全局环境配置 (scMax.config)
+    # 优先在 scMax.py 所在目录及其当前运行目录寻找
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    global_conf_candidates = [
+        os.path.join(base_dir, "scMax.config"),
+        "scMax.config"
+    ]
+    for g_path in global_conf_candidates:
+        if os.path.exists(g_path):
+            try:
+                with open(g_path, 'r', encoding='utf-8') as f:
+                    g_conf = yaml.safe_load(f)
+                    if g_conf:
+                        merge_configs(final_config, g_conf)
+                break # 找到第一个即停止
+            except Exception as e:
+                print(f"Warning: 加载全局配置 {g_path} 失败: {e}")
+
+    # 3. Level 3: 项目业务配置 (通过 -c 指定)
     if not os.path.exists(config_path):
-        print(f"Error: Base configuration file '{config_path}' not found.")
+        if config_path == "base_config.yaml":
+            # 如果是默认指定的 base_config 不存在，则依赖 L1/L2 继续
+            return final_config
+        print(f"Error: 找不到指定的项目配置文件: '{config_path}'")
         sys.exit(1)
-    with open(config_path, 'r', encoding='utf-8') as f:
-        return yaml.safe_load(f)
+        
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            user_config = yaml.safe_load(f)
+            if user_config:
+                merge_configs(final_config, user_config)
+    except Exception as e:
+        print(f"Error: 加载项目配置 {config_path} 失败: {e}")
+        sys.exit(1)
+                    
+    return final_config
 
 def run_step(step_name, args, step_conf):
     base_config = load_base_config(args.config)
@@ -27,6 +70,13 @@ def run_step(step_name, args, step_conf):
     step_conf['run'] = True
     if step_name not in base_config:
         base_config[step_name] = {}
+    
+    # 自动将 CLI 传入的 species 注入到 Database_Info (如果存在)
+    if hasattr(args, 'species') and args.species:
+        if 'Database_Info' not in base_config:
+            base_config['Database_Info'] = {}
+        base_config['Database_Info']['species'] = args.species
+        
     base_config[step_name].update(step_conf)
 
     run_opts = [step_name.split("_")[0]]
@@ -167,7 +217,14 @@ def main():
     parser_diff.add_argument("--groupby", default="CellType", help="比较列 (如 Group)")
     parser_diff.add_argument("--split_by", default="CellType", help="[模式B] 亚群拆分依据列")
     parser_diff.add_argument("--cmp_file", default="", help="[模式B] 比较列表文件 (.xls/.txt)")
+    parser_diff.add_argument("--species", default="Human", help="物种信息 (决定差异分析会自动挂载哪个富集库)")
     parser_diff.add_argument("--do_enrich", action="store_true", help="是否执行 GO/KEGG 富集")
+
+    # ---------------------------------------------------------
+    # init
+    # ---------------------------------------------------------
+    parser_init = subparsers.add_parser("init", help="初始化：拷贝配置文件模板到当前目录")
+    parser_init.add_argument("-n", "--name", default="base_config.yaml", help="生成的配置文件名 (默认 base_config.yaml)")
 
     # ---------------------------------------------------------
     # run_all 向上兼容与统一 YAML
@@ -279,6 +336,58 @@ def main():
             "do_enrich": args.do_enrich
         }
         run_step("06_differential", args, conf)
+
+    elif args.command == "init":
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        import shutil
+        
+        # 定义所有可用的配置模板映射 (源文件名: 目标建议名)
+        templates = {
+            "config_template.yaml":             "base_config.yaml",
+            "config_template_01_qc.yaml":       "01_scQC.yaml",
+            "config_template_02_filter.yaml":   "02_filter.yaml",
+            "config_template_03_cluster.yaml":  "03_cluster.yaml",
+            "config_template_04_subcluster.yaml":"04_subcluster.yaml",
+            "config_template_05_celltype.yaml": "05_celltype.yaml",
+            "config_template_06_diff.yaml":     "06_differential.yaml"
+        }
+        
+        generated_files = []
+        for src, dest in templates.items():
+            src_path = os.path.join(base_dir, src)
+            if os.path.exists(src_path):
+                # 如果用户通过 -n 指定了名字，则将主模板命名为该名字
+                target_name = args.name if (src == "config_template.yaml" and args.name != "base_config.yaml") else dest
+                
+                if not os.path.exists(target_name):
+                    try:
+                        shutil.copy(src_path, target_name)
+                        generated_files.append(target_name)
+                    except Exception as e:
+                        print(f"Warning: 拷贝 {target_name} 失败: {e}")
+                else:
+                    # 如果已存在，则不覆盖，但后续需要提示
+                    pass
+
+        if generated_files:
+            print("✨ 成功为您初始化 scMax 步进式精简配置全家桶：")
+            for f in sorted(generated_files):
+                # 简单映射一下中文描述
+                desc_map = {
+                    "base_config.yaml": "全流程标准版 (一站式控制)",
+                    "01_scQC.yaml": "Step 01: 数据整合与预质控",
+                    "02_filter.yaml": "Step 02: 深度过滤与质控",
+                    "03_cluster.yaml": "Step 03: 降维、去批次与聚类",
+                    "04_subcluster.yaml": "Step 04: 特定亚群提取与细分",
+                    "05_celltype.yaml": "Step 05: 专家注释、分发与 HTML 报告",
+                    "06_differential.yaml": "Step 06: 差异分析挖掘与组间比较"
+                }
+                desc = desc_map.get(f, "")
+                print(f"  - {f:<20} {desc}")
+            print("\n💡 建议：您可以根据当前分析进度，仅编辑并执行对应的配置文件，消除冗余参数干扰。")
+            print("   例如：python3 scMax.py cluster -c 03_cluster.yaml")
+        else:
+            print("Notice: 未生成任何新文件（目标分步配置文件均已存在）。")
 
 if __name__ == "__main__":
     main()

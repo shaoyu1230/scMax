@@ -1,0 +1,19 @@
+# scMax 01_scQC (数据整合与预质控) 配置模板
+# ==========================================================
+
+01_scQC:
+  run: true
+  
+  # --- 数据源输入 (二选一) ---
+  samples_file: "samples.txt" # [模式A] 样品列表路径 (Tab分隔，包含 Sample, DataDir 路径)
+  rdsfile: ""               # [模式B] 若已有 Seurat RDS，直接提供路径
+  
+  # --- 整合模式选择 ---
+  # merge: 简单合并
+  # doublet: 合并并运行 DoubletFinder (双细胞识别)
+  # decontX: 环境 RNA 污染去除 (常用于高浓度单细胞测序)
+  method: "doublet"
+  
+  # --- 列名定义 ---
+  col_sample: "Sample"      # 样品标识列
+  col_group: "Group"        # [可选] 分组标识列
