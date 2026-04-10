@@ -80,6 +80,7 @@ cluster_de_all <- function(data, assay='RNA', groupby='seurat_clusters', outdir)
 group_de_by_subtype <- function(data, split_by, condition, cmp_file, outdir, assay='RNA'){
   cat("=> [DE] 启动模式 B: 亚群内组间精细比较 (Subtype Pairwise DE)...\n")
   dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
+  min_cells_per_group <- 3
   
   if (!file.exists(cmp_file)) stop("错误: 找不到比较列表文件 (cmp_file)!")
   cmp_list <- read.table(cmp_file, sep = '\t', header = FALSE, stringsAsFactors = FALSE)
@@ -115,11 +116,32 @@ group_de_by_subtype <- function(data, split_by, condition, cmp_file, outdir, ass
         cat("(缺失组别数据, 跳过)\n")
         next
       }
+
+      group_counts <- table(as.character(sub_obj@meta.data[[condition]]))
+      n1 <- unname(group_counts[g1])
+      n2 <- unname(group_counts[g2])
+      n1 <- ifelse(length(n1) == 0 || is.na(n1), 0, n1)
+      n2 <- ifelse(length(n2) == 0 || is.na(n2), 0, n2)
+
+      if (n1 < min_cells_per_group || n2 < min_cells_per_group) {
+        cat(sprintf("(组细胞数不足, 跳过: %s=%d, %s=%d; 至少需要 %d)\n",
+                    g1, n1, g2, n2, min_cells_per_group))
+        next
+      }
       
       # 开始差异分析
       cat("... 正在计算 \n")
       Idents(sub_obj) <- sub_obj@meta.data[[condition]]
-      mks <- FindMarkers(sub_obj, ident.1 = g1, ident.2 = g2, min.pct = 0.1, logfc.threshold = 0)
+      mks <- tryCatch(
+        FindMarkers(sub_obj, ident.1 = g1, ident.2 = g2, min.pct = 0.1, logfc.threshold = 0),
+        error = function(e) {
+          cat(sprintf("(差异分析失败, 跳过: %s)\n", conditionMessage(e)))
+          return(NULL)
+        }
+      )
+      if (is.null(mks)) {
+        next
+      }
       mks$compare <- comp_name
       mks$gene <- rownames(mks)
       mks$subtype <- st
