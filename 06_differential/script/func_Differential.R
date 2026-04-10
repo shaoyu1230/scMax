@@ -10,6 +10,7 @@ suppressMessages(library(dplyr))
 suppressMessages(library(reshape2))
 suppressMessages(library(ggplot2))
 suppressMessages(library(SCP))
+suppressMessages(library(SeuratWrappers))
 
 # --- [模式 A] 全标签组差异核心函数 ---
 # input: Seurat对象, 比较列, 输出路径
@@ -131,9 +132,16 @@ group_de_by_subtype <- function(data, split_by, condition, cmp_file, outdir, ass
       
       # 开始差异分析
       cat("... 正在计算 \n")
-      Idents(sub_obj) <- sub_obj@meta.data[[condition]]
       mks <- tryCatch(
-        FindMarkers(sub_obj, ident.1 = g1, ident.2 = g2, min.pct = 0.1, logfc.threshold = 0),
+        RunPresto(
+          sub_obj,
+          group.by = condition,
+          ident.1 = g1,
+          ident.2 = g2,
+          logfc.threshold = 0,
+          min.pct = 0.1,
+          min.cells.group = min_cells_per_group
+        ),
         error = function(e) {
           cat(sprintf("(差异分析失败, 跳过: %s)\n", conditionMessage(e)))
           return(NULL)
@@ -142,8 +150,15 @@ group_de_by_subtype <- function(data, split_by, condition, cmp_file, outdir, ass
       if (is.null(mks)) {
         next
       }
+      mks <- as.data.frame(mks)
+      if (nrow(mks) == 0) {
+        cat("(未检出差异基因, 跳过)\n")
+        next
+      }
       mks$compare <- comp_name
-      mks$gene <- rownames(mks)
+      if (!("gene" %in% colnames(mks))) {
+        mks$gene <- rownames(mks)
+      }
       mks$subtype <- st
       
       # 判定
