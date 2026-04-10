@@ -212,27 +212,27 @@ def main():
     parser_diff = subparsers.add_parser("differential", help="深度差异分析挖掘 (07_differential)")
     parser_diff.add_argument("-c", "--config", default="base_config.yaml", help="基础配置")
     parser_diff.add_argument("-o", "--outdir", default=".", help="输出目录")
-    parser_diff.add_argument("--rds", required=True, help="输入 Seurat RDS 对象")
-    parser_diff.add_argument("--method", default="all_markers", choices=["all_markers", "group_comparison"], help="差异模式: all_markers 或 group_comparison")
-    parser_diff.add_argument("--groupby", default="CellType", help="比较列 (如 Group)")
-    parser_diff.add_argument("--split_by", default="CellType", help="[模式B] 亚群拆分依据列")
+    parser_diff.add_argument("--rds", default="", help="输入 Seurat RDS 对象；留空则从配置文件读取")
+    parser_diff.add_argument("--method", default="", choices=["", "all_markers", "group_comparison"], help="差异模式: all_markers 或 group_comparison；留空则从配置文件读取")
+    parser_diff.add_argument("--groupby", default="", help="比较列 (如 Group)；留空则从配置文件读取")
+    parser_diff.add_argument("--split_by", default="", help="[模式B] 亚群拆分依据列；留空则从配置文件读取")
     parser_diff.add_argument("--cmp_file", default="", help="[模式B] 比较列表文件 (.xls/.txt)")
-    parser_diff.add_argument("--species", default="Human", help="物种信息 (决定差异分析会自动挂载哪个富集库)")
-    parser_diff.add_argument("--do_enrich", action="store_true", help="是否执行 GO/KEGG 富集")
+    parser_diff.add_argument("--species", default="", help="物种信息 (决定差异分析会自动挂载哪个富集库)；留空则从配置文件读取")
+    parser_diff.add_argument("--do_enrich", action="store_true", default=None, help="是否执行 GO/KEGG 富集")
 
     # ---------------------------------------------------------
     # 06_merge_sub
     # ---------------------------------------------------------
     parser_merge = subparsers.add_parser("merge_sub", help="亚群注释回溯整合与大群清洗 (Step 06)")
     parser_merge.add_argument("-c", "--config", default="base_config.yaml", help="配置文件路径")
-    parser_merge.add_argument("-m", "--main_rds", required=True, help="主对象 RDS 路径")
+    parser_merge.add_argument("-m", "--main_rds", default="", help="主对象 RDS 路径；留空则从配置文件读取")
     parser_merge.add_argument("-s", "--sub_map", default="", help="亚群映射 (Major:Path, 逗号分隔)")
     parser_merge.add_argument("-o", "--outdir", default=".", help="输出目录")
-    parser_merge.add_argument("--major_col", default="MajorType", help="大群列名")
-    parser_merge.add_argument("--sub_col", default="CellType", help="亚群对象中的注释列名")
-    parser_merge.add_argument("--subtype_col", default="SubType", help="回填到主对象的新列名")
-    parser_merge.add_argument("--sample_col", default="Sample", help="样本列名")
-    parser_merge.add_argument("--group_col", default="Group", help="分组列名，多个用逗号分隔")
+    parser_merge.add_argument("--major_col", default="", help="大群列名；留空则从配置文件读取")
+    parser_merge.add_argument("--sub_col", default="", help="亚群对象中的注释列名；留空则从配置文件读取")
+    parser_merge.add_argument("--subtype_col", default="", help="回填到主对象的新列名；留空则从配置文件读取")
+    parser_merge.add_argument("--sample_col", default="", help="样本列名；留空则从配置文件读取")
+    parser_merge.add_argument("--group_col", default="", help="分组列名，多个用逗号分隔；留空则从配置文件读取")
 
     # ---------------------------------------------------------
     # init
@@ -341,26 +341,37 @@ def main():
         run_step("05_celltype", args, conf)
 
     elif args.command == "differential":
-        conf = {
-            "rdsfile": args.rds,
-            "method": args.method,
-            "groupby": args.groupby,
-            "split_by": args.split_by,
-            "cmp_file": args.cmp_file,
-            "do_enrich": args.do_enrich
-        }
+        conf = {}
+        if args.rds != "":
+            conf["rdsfile"] = args.rds
+        if args.method != "":
+            conf["method"] = args.method
+        if args.groupby != "":
+            conf["groupby"] = args.groupby
+        if args.split_by != "":
+            conf["split_by"] = args.split_by
+        if args.cmp_file != "":
+            conf["cmp_file"] = args.cmp_file
+        if args.do_enrich is not None:
+            conf["do_enrich"] = args.do_enrich
         run_step("07_differential", args, conf)
 
     elif args.command == "merge_sub":
-        conf = {
-            "main_rds": args.main_rds,
-            "sub_map": args.sub_map,
-            "major_col": args.major_col,
-            "sub_col": args.sub_col,
-            "subtype_col": args.subtype_col,
-            "sample_col": args.sample_col,
-            "group_col": args.group_col
-        }
+        conf = {}
+        if args.main_rds != "":
+            conf["main_rds"] = args.main_rds
+        if args.sub_map != "":
+            conf["sub_map"] = args.sub_map
+        if args.major_col != "":
+            conf["major_col"] = args.major_col
+        if args.sub_col != "":
+            conf["sub_col"] = args.sub_col
+        if args.subtype_col != "":
+            conf["subtype_col"] = args.subtype_col
+        if args.sample_col != "":
+            conf["sample_col"] = args.sample_col
+        if args.group_col != "":
+            conf["group_col"] = args.group_col
         run_step("06_merge_sub", args, conf)
 
     elif args.command == "init":
@@ -377,8 +388,7 @@ def main():
             "config_template_05_celltype.yaml": "05_celltype.yaml",
             "config_template_07_diff.yaml":     "07_differential.yaml",
             "config_template_06_merge_sub.yaml":"06_merge_sub.yaml",
-            "config_template_06_diff.yaml":     "07_differential.yaml",
-            "config_template_07_merge_sub.yaml":"06_merge_sub.yaml"
+            "config_template_06_diff.yaml":     "07_differential.yaml"
         }
         
         generated_files = []

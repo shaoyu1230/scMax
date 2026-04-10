@@ -31,8 +31,9 @@ opt <- parser$parse_args()
 script_dir <- this.path::this.dir()
 
 # 加载 scMax 核心公共库 (复用富集与绘图底层逻辑)
-# 寻找路径: 向上跳一级到 05_celltype/script/
-func_common <- file.path(dirname(script_dir), "05_celltype", "script", "func_scRNA_celltype_anno.R")
+# script_dir = <repo>/06_differential/script，因此需要向上跳两级到仓库根目录
+repo_dir <- dirname(dirname(script_dir))
+func_common <- file.path(repo_dir, "05_celltype", "script", "func_scRNA_celltype_anno.R")
 if (file.exists(func_common)) {
   source(func_common)
 } else {

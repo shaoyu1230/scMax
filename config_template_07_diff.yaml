@@ -7,13 +7,13 @@
   
   # 差异模式选择:
   # A: all_markers (寻找指定groupby列中所有组的Marker)
-  # B: group_comparison (在非groupby列的内部分组间做两两比较，如亚群内做对组对比)
+  # B: group_comparison (在 split_by 指定的亚群内部，比较 groupby 指定条件列的组间差异)
   method: "all_markers"
   
-  groupby: "CellType"       # 分类依据列 (如 CellType)
+  groupby: "CellType"       # 模式A: 找该列各组 marker；模式B: 作为比较条件列 (如 Group)
   
   # --- 模式 B 专用参数 ---
-  split_by: "CellType"      # 亚群拆分依据列 (通常同 groupby)
+  split_by: "CellType"      # 模式B: 在该列定义的亚群内部做组间比较 (如 CellType / SubType)
   cmp_file: ""              # Tab分隔的比较对列表 (每行两列: GroupA GroupB)
   
   # --- 富集分析 ---
