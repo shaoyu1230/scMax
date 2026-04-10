@@ -136,7 +136,7 @@ def main():
     parser_filter = subparsers.add_parser("filter", help="硬过滤修剪死细胞 (02_filter)")
     parser_filter.add_argument("-c", "--config", default="base_config.yaml", help="基础配置")
     parser_filter.add_argument("-o", "--outdir", default=".", help="输出目录")
-    parser_filter.add_argument("--rds", required=True, help="来自上一级的 RDS 结果路径")
+    parser_filter.add_argument("--rds", default="", help="来自上一级的 RDS 结果路径；留空则从配置文件读取")
     parser_filter.add_argument("--col_sample", default="Sample", help="样本列")
     parser_filter.add_argument("--min_feat", type=int, default=200, help="最小基因数")
     parser_filter.add_argument("--max_feat", type=int, default=1000000000, help="最大基因数")
@@ -153,7 +153,7 @@ def main():
     parser_cluster = subparsers.add_parser("cluster", help="降维聚类分析 (03_cluster)")
     parser_cluster.add_argument("-c", "--config", default="base_config.yaml", help="基础配置")
     parser_cluster.add_argument("-o", "--outdir", default=".", help="输出目录")
-    parser_cluster.add_argument("--rds", required=True, help="需要提取聚类的RDS对象路径")
+    parser_cluster.add_argument("--rds", default="", help="需要提取聚类的RDS对象路径；留空则从配置文件读取")
     parser_cluster.add_argument("--subset_col", default="", help="提前抽取的列 (可选)")
     parser_cluster.add_argument("--subset_val", default="", help="提前抽取的值 (可选)")
     parser_cluster.add_argument("--methods", default="harmony,rpca", help="去批次重整合的方法")
@@ -173,7 +173,7 @@ def main():
     parser_subcluster = subparsers.add_parser("subcluster", help="高分辨亚群分离提取再聚类 (04_subcluster)")
     parser_subcluster.add_argument("-c", "--config", default="base_config.yaml", help="基础配置")
     parser_subcluster.add_argument("-o", "--outdir", default=".", help="输出目录")
-    parser_subcluster.add_argument("--rds", required=True, help="母集 RDS 对象")
+    parser_subcluster.add_argument("--rds", default="", help="母集 RDS 对象；留空则从配置文件读取")
     parser_subcluster.add_argument("--subset_col", required=True, help="代表抽取亚群依据所在列名，例如 res0.4")
     parser_subcluster.add_argument("--subset_val", required=True, help="必须填入提取的值，如 '1' 或 '1,5'")
     parser_subcluster.add_argument("--methods", default="re_harmony,original_integrated", help="重聚类使用的数据整合方式")
@@ -193,7 +193,7 @@ def main():
     parser_celltype = subparsers.add_parser("celltype", help="细胞学专家组注释映射分发与结题报告 (05_celltype)")
     parser_celltype.add_argument("-c", "--config", default="base_config.yaml", help="基础配置")
     parser_celltype.add_argument("-o", "--outdir", default=".", help="输出目录")
-    parser_celltype.add_argument("--rds", required=True, help="终态降维后未注释对象RDS")
+    parser_celltype.add_argument("--rds", default="", help="终态降维后未注释对象RDS；留空则从配置文件读取")
     parser_celltype.add_argument("--annofile", default="", help="关键！打签校准对照映射文件")
     parser_celltype.add_argument("--louper_path", default="", help="转化为 10X cloupe 浏览器数据的工具位置(可留空跳过)")
     
@@ -276,7 +276,6 @@ def main():
 
     elif args.command == "filter":
         conf = {
-            "rdsfile": args.rds,
             "col_sample": args.col_sample,
             "min_feat": args.min_feat,
             "max_feat": args.max_feat,
@@ -287,11 +286,12 @@ def main():
             "rm_doublet": args.rm_doublet,
             "max_decontX": args.max_decontX
         }
+        if args.rds != "":
+            conf["rdsfile"] = args.rds
         run_step("02_filter", args, conf)
         
     elif args.command == "cluster":
         conf = {
-            "rdsfile": args.rds,
             "subset_col": args.subset_col,
             "subset_val": args.subset_val,
             "methods": args.methods,
@@ -305,11 +305,12 @@ def main():
             "do_refmarker": args.do_refmarker,
             "refmarker_file": args.refmarker_file
         }
+        if args.rds != "":
+            conf["rdsfile"] = args.rds
         run_step("03_cluster", args, conf)
 
     elif args.command == "subcluster":
         conf = {
-            "rdsfile": args.rds,
             "subset_col": args.subset_col,
             "subset_val": args.subset_val,
             "methods": args.methods,
@@ -323,11 +324,12 @@ def main():
             "do_refmarker": args.do_refmarker,
             "refmarker_file": args.refmarker_file
         }
+        if args.rds != "":
+            conf["rdsfile"] = args.rds
         run_step("04_subcluster", args, conf)
 
     elif args.command == "celltype":
         conf = {
-            "rdsfile": args.rds,
             "annofile": args.annofile,
             "louper_path": args.louper_path,
             "do_cluster": args.do_cluster,
@@ -338,6 +340,8 @@ def main():
             "do_report": args.do_report,
             "force_clean": args.force_clean
         }
+        if args.rds != "":
+            conf["rdsfile"] = args.rds
         run_step("05_celltype", args, conf)
 
     elif args.command == "differential":
