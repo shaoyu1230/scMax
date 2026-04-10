@@ -61,7 +61,7 @@ def run_step(step_name, args, step_conf):
         base_config['global_outdir'] = args.outdir
 
     # Disable all steps except the current one
-    for s in ["01_scQC", "scQC", "02_filter", "03_cluster", "04_subcluster", "05_celltype", "Database_Info"]:
+    for s in ["01_scQC", "scQC", "02_filter", "03_cluster", "04_subcluster", "05_celltype", "06_merge_sub", "07_differential", "06_differential", "07_merge_sub", "merge_sub", "Database_Info"]:
         if s in base_config and isinstance(base_config[s], dict):
             if s != step_name and s != "Database_Info":
                 base_config[s]['run'] = False
@@ -207,9 +207,9 @@ def main():
     parser_celltype.add_argument("--force_clean", action="store_true", help="是否暴力格式化目标输出位点")
 
     # ---------------------------------------------------------
-    # 06_differential
+    # 07_differential
     # ---------------------------------------------------------
-    parser_diff = subparsers.add_parser("differential", help="深度差异分析挖掘 (06_differential)")
+    parser_diff = subparsers.add_parser("differential", help="深度差异分析挖掘 (07_differential)")
     parser_diff.add_argument("-c", "--config", default="base_config.yaml", help="基础配置")
     parser_diff.add_argument("-o", "--outdir", default=".", help="输出目录")
     parser_diff.add_argument("--rds", required=True, help="输入 Seurat RDS 对象")
@@ -219,6 +219,20 @@ def main():
     parser_diff.add_argument("--cmp_file", default="", help="[模式B] 比较列表文件 (.xls/.txt)")
     parser_diff.add_argument("--species", default="Human", help="物种信息 (决定差异分析会自动挂载哪个富集库)")
     parser_diff.add_argument("--do_enrich", action="store_true", help="是否执行 GO/KEGG 富集")
+
+    # ---------------------------------------------------------
+    # 06_merge_sub
+    # ---------------------------------------------------------
+    parser_merge = subparsers.add_parser("merge_sub", help="亚群注释回溯整合与大群清洗 (Step 06)")
+    parser_merge.add_argument("-c", "--config", default="base_config.yaml", help="配置文件路径")
+    parser_merge.add_argument("-m", "--main_rds", required=True, help="主对象 RDS 路径")
+    parser_merge.add_argument("-s", "--sub_map", default="", help="亚群映射 (Major:Path, 逗号分隔)")
+    parser_merge.add_argument("-o", "--outdir", default=".", help="输出目录")
+    parser_merge.add_argument("--major_col", default="MajorType", help="大群列名")
+    parser_merge.add_argument("--sub_col", default="CellType", help="亚群对象中的注释列名")
+    parser_merge.add_argument("--subtype_col", default="SubType", help="回填到主对象的新列名")
+    parser_merge.add_argument("--sample_col", default="Sample", help="样本列名")
+    parser_merge.add_argument("--group_col", default="Group", help="分组列名，多个用逗号分隔")
 
     # ---------------------------------------------------------
     # init
@@ -335,7 +349,19 @@ def main():
             "cmp_file": args.cmp_file,
             "do_enrich": args.do_enrich
         }
-        run_step("06_differential", args, conf)
+        run_step("07_differential", args, conf)
+
+    elif args.command == "merge_sub":
+        conf = {
+            "main_rds": args.main_rds,
+            "sub_map": args.sub_map,
+            "major_col": args.major_col,
+            "sub_col": args.sub_col,
+            "subtype_col": args.subtype_col,
+            "sample_col": args.sample_col,
+            "group_col": args.group_col
+        }
+        run_step("06_merge_sub", args, conf)
 
     elif args.command == "init":
         base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -349,7 +375,10 @@ def main():
             "config_template_03_cluster.yaml":  "03_cluster.yaml",
             "config_template_04_subcluster.yaml":"04_subcluster.yaml",
             "config_template_05_celltype.yaml": "05_celltype.yaml",
-            "config_template_06_diff.yaml":     "06_differential.yaml"
+            "config_template_07_diff.yaml":     "07_differential.yaml",
+            "config_template_06_merge_sub.yaml":"06_merge_sub.yaml",
+            "config_template_06_diff.yaml":     "07_differential.yaml",
+            "config_template_07_merge_sub.yaml":"06_merge_sub.yaml"
         }
         
         generated_files = []
@@ -380,7 +409,8 @@ def main():
                     "03_cluster.yaml": "Step 03: 降维、去批次与聚类",
                     "04_subcluster.yaml": "Step 04: 特定亚群提取与细分",
                     "05_celltype.yaml": "Step 05: 专家注释、分发与 HTML 报告",
-                    "06_differential.yaml": "Step 06: 差异分析挖掘与组间比较"
+                    "06_merge_sub.yaml": "Step 06: 亚群注释回填整合",
+                    "07_differential.yaml": "Step 07: 差异分析挖掘与组间比较"
                 }
                 desc = desc_map.get(f, "")
                 print(f"  - {f:<20} {desc}")

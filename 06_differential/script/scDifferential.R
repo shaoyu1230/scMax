@@ -10,7 +10,7 @@ suppressMessages(library(Seurat))
 suppressMessages(library(yaml))
 suppressMessages(library(this.path))
 
-parser <- ArgumentParser(description = 'scMax 差异分析增强模块: 支持全标签组差异(Global DE)和亚群内组间比较(Group DE)')
+parser <- ArgumentParser(description = 'scMax 07_differential 差异分析增强模块: 支持全标签组差异(Global DE)和亚群内组间比较(Group DE)')
 
 parser$add_argument('-i', '--rds', dest='inputrds', required=TRUE, help='输入的 Seurat RDS 文件')
 parser$add_argument('-o', '--outdir', dest='outdir', required=TRUE, help='结果输出总目录')
@@ -89,5 +89,5 @@ if (opt$method == "all_markers") {
 }
 
 cat("\n========================================\n")
-cat("=> 06_differential (差异挖掘模块) 运行结束！\n")
+cat("=> 07_differential (差异挖掘模块) 运行结束！\n")
 cat("=> 结果报告已存入:", opt$outdir, "\n")

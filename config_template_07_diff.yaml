@@ -5,10 +5,10 @@
   run: true                 # 运行此模块
   rdsfile: ""               # [必填] 输入的 Seurat RDS 对象路径
   
-  # 差异模式选择: 
+  # 差异模式选择:
   # A: all_markers (寻找指定groupby列中所有组的Marker)
   # B: group_comparison (在非groupby列的内部分组间做两两比较，如亚群内做对组对比)
-  method: "all_markers"      
+  method: "all_markers"
   
   groupby: "CellType"       # 分类依据列 (如 CellType)
   

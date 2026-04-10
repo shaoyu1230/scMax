@@ -13,7 +13,8 @@
 - **`03_cluster`**: 降维聚类核心。集成 Harmony、RPCA 等主流去批次算法并完成全局 Marker 挖掘。
 - **`04_subcluster`**: 亚群精细分化。针对特定簇进行二次提取与特异性重聚类。
 - **`05_celltype`**: 注释、分发与报告。实现多级人工标注映射，生成交互式 HTML 结题报告并自动注册中央数据库。
-- **`06_differential` [NEW]**: 深度差异挖掘。支持全局标签差异分析（Mode A）以及精细亚群内部的组间两两比较（Mode B）。
+- **`06_merge_sub` [NEW]**: 亚群注释回填整合。将亚群注释结果合并回大群对象，输出层级 UMAP 与样本/分组统计。
+- **`07_differential` [NEW]**: 深度差异挖掘。支持全局标签差异分析（Mode A）以及精细亚群内部的组间两两比较（Mode B），可直接基于合并后的对象继续分析。
 
 ---
 
@@ -79,7 +80,9 @@ scMax/
 ├── 03_cluster/            # 全局聚类
 ├── 04_subcluster/         # 亚群细分
 ├── 05_celltype/           # 注释与结题报告
-├── 06_differential/       # [New!] 差异深度挖掘
+├── 06_differential/       # 差异分析脚本目录（当前实现仍复用此目录名）
+├── config_template_06_merge_sub.yaml  # Step 06 配置模板
+├── config_template_07_diff.yaml       # Step 07 配置模板
 │
 ├── WebUI/                 # 可视化看板系统 (Flask)
 │   ├── scMax_projects.db  # 项目元数据库

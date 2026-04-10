@@ -275,12 +275,12 @@ def generate_subcluster_cmd(config, rscript_cmd, base_dir, next_input_rds):
     return script_content, next_res
 
 def generate_differential_cmd(config, rscript_cmd, base_dir, next_input_rds):
-    diff_conf = config.get("06_differential") or {}
+    diff_conf = config.get("07_differential") or config.get("06_differential") or {}
     if not diff_conf.get("run", False):
-        return "# Skip 06_differential\n\n", next_input_rds
+        return "# Skip 07_differential\n\n", next_input_rds
 
     script_content = "#" + "="*40 + "\n"
-    script_content += "# Step 6: 06_differential (差异表达分析挖掘模式 A/B)\n"
+    script_content += "# Step 7: 07_differential (差异表达分析挖掘模式 A/B)\n"
     script_content += "#" + "="*40 + "\n"
     script_dir = os.path.join(base_dir, "06_differential", "script")
     
@@ -294,7 +294,7 @@ def generate_differential_cmd(config, rscript_cmd, base_dir, next_input_rds):
     cmp_file = diff_conf.get("cmp_file", "")
     do_enrich = diff_conf.get("do_enrich", True)
     
-    diff_out = os.path.join("$OUTDIR", f"06_differential_{method}")
+    diff_out = os.path.join("$OUTDIR", f"07_differential_{method}")
     script_content += f"if [ -d {diff_out} ]; then rm -rf {diff_out}; fi\n"
     script_content += f"mkdir -p {diff_out}\n"
     
@@ -325,6 +325,45 @@ def generate_differential_cmd(config, rscript_cmd, base_dir, next_input_rds):
     
     script_content += cmd
     return script_content, next_input_rds
+
+def generate_merge_sub_cmd(config, rscript_cmd, base_dir, next_input_rds, config_file):
+    merge_conf = config.get("06_merge_sub") or config.get("merge_sub") or config.get("07_merge_sub") or {}
+    if not merge_conf.get("run", False):
+        return "# Skip 06_merge_sub\n\n", next_input_rds
+
+    script_content = "#" + "="*40 + "\n"
+    script_content += "# Step 6: 06_merge_sub (亚群注释回填整合)\n"
+    script_content += "#" + "="*40 + "\n"
+    script_dir = os.path.join(base_dir, "05_celltype", "script")
+
+    main_rds = merge_conf.get("main_rds", "") or next_input_rds
+    if not main_rds:
+        return "echo 'Error: 启用 06_merge_sub 但未提供 main_rds！'\nexit 1\n", next_input_rds
+
+    merge_out = merge_conf.get("outdir", "") or os.path.join("$OUTDIR", "06_merge_sub_out")
+    script_content += f"if [ -d {merge_out} ]; then rm -rf {merge_out}; fi\n"
+    script_content += f"mkdir -p {merge_out}\n"
+    script_content += get_config_snapshot_sh(merge_conf, os.path.join(merge_out, "config_snapshot.yaml"))
+
+    cmd = f"{rscript_cmd} {script_dir}/scMergeSub.R \\\n"
+    cmd += f"  --config \"{config_file}\" \\\n"
+    cmd += f"  --main_rds \"{main_rds}\" \\\n"
+    if merge_conf.get("sub_map", ""):
+        cmd += f"  --sub_map \"{merge_conf.get('sub_map', '')}\" \\\n"
+    if merge_conf.get("major_col", ""):
+        cmd += f"  --major_col \"{merge_conf.get('major_col', '')}\" \\\n"
+    if merge_conf.get("sub_col", ""):
+        cmd += f"  --sub_col \"{merge_conf.get('sub_col', '')}\" \\\n"
+    if merge_conf.get("subtype_col", ""):
+        cmd += f"  --subtype_col \"{merge_conf.get('subtype_col', '')}\" \\\n"
+    if merge_conf.get("sample_col", ""):
+        cmd += f"  --sample_col \"{merge_conf.get('sample_col', '')}\" \\\n"
+    if merge_conf.get("group_col", ""):
+        cmd += f"  --group_col \"{merge_conf.get('group_col', '')}\" \\\n"
+    cmd += f"  --outdir \"{merge_out}\"\n\n"
+
+    script_content += cmd
+    return script_content, os.path.join(merge_out, "Rdata", "Data-Merged_SubType.rds")
 
 def generate_celltype_cmd(config, rscript_cmd, base_dir, next_input_rds, config_file):
     celltype_conf = config.get("05_celltype") or {}
@@ -488,6 +527,9 @@ def generate_bash_script_from_dict(config, script_outdir, config_file="base_conf
     step_content, next_input_rds, celltype_out = generate_celltype_cmd(config, rscript_cmd, base_dir, next_input_rds, config_file)
     script_content += step_content
     
+    step_content, next_input_rds = generate_merge_sub_cmd(config, rscript_cmd, base_dir, next_input_rds, config_file)
+    script_content += step_content
+
     step_content, next_input_rds = generate_differential_cmd(config, rscript_cmd, base_dir, next_input_rds)
     script_content += step_content
     
@@ -518,8 +560,14 @@ def generate_bash_script(config_file, script_outdir):
     if "04_subcluster" in config and config.get("04_subcluster", {}).get("run", False):
         run_steps.append("04")
     
-    if "06_differential" in config and config.get("06_differential", {}).get("run", False):
+    if ("06_merge_sub" in config and config.get("06_merge_sub", {}).get("run", False)) or \
+       ("07_merge_sub" in config and config.get("07_merge_sub", {}).get("run", False)) or \
+       ("merge_sub" in config and config.get("merge_sub", {}).get("run", False)):
         run_steps.append("06")
+
+    if ("07_differential" in config and config.get("07_differential", {}).get("run", False)) or \
+       ("06_differential" in config and config.get("06_differential", {}).get("run", False)):
+        run_steps.append("07")
     
     celltype_conf = config.get("05_celltype", {})
     if "05_celltype" in config and celltype_conf.get("run", False):
