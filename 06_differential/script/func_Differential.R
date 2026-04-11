@@ -166,7 +166,8 @@ plot_group_volcano <- function(deg_df, g1, g2, out_prefix, top_n = 8) {
       aes(label = gene_label),
       size = 2.8,
       check_overlap = TRUE,
-      vjust = -0.2
+      vjust = -0.2,
+      show.legend = FALSE
     )
   }
 
