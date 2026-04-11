@@ -103,7 +103,13 @@ GeneList2GOKEGG <- function(infile, orgdb = "org.Rn.eg.db", organism_kegg = "rno
 
   if (runKEGG) {
     eg <- bitr(intersectGenes, fromType = "SYMBOL", toType = c("ENTREZID"), OrgDb = orgdb)
+    if (is.null(eg) || nrow(eg) == 0) {
+      return(invisible(NULL))
+    }
     genelist <- eg$ENTREZID[!is.na(eg$ENTREZID)]
+    if (length(genelist) == 0) {
+      return(invisible(NULL))
+    }
     keggresult <- enrichKEGG(
       gene = genelist,
       use_internal_data = TRUE,
@@ -112,7 +118,7 @@ GeneList2GOKEGG <- function(infile, orgdb = "org.Rn.eg.db", organism_kegg = "rno
       pvalueCutoff = 0.05,
       qvalueCutoff = 0.2
     )
-    if (!is.null(keggresult)) {
+    if (!is.null(keggresult) && nrow(keggresult@result) > 0) {
       keggresult <- setReadable(keggresult, orgdb, keyType = "ENTREZID")
       openxlsx::write.xlsx(keggresult@result, paste0(outdir, "/", prefix, "KEGG.xlsx"))
       plotkegg(
@@ -277,10 +283,17 @@ cluster_de_all <- function(data, assay='RNA', groupby='seurat_clusters', outdir)
   
   # 排序与判定
   degs <- as.data.frame(degs)
+  if (nrow(degs) == 0) {
+    cat("   - 未检出差异基因，跳过后续导出与绘图。\n")
+    saveRDS(degs, file.path(outdir, 'DEGs.rds'))
+    return(degs)
+  }
   degs <- setorderv(degs, c("cluster", "avg_log2FC", "pct.1", "pct.2"), c(1, -1, 1, -1))
-  degs$UpDown <- 'not.sig'
-  degs[degs$p_val_adj < 0.05 & degs$avg_log2FC >= 0.25 & degs$pct.1 >= 0.1, ]$UpDown <- 'Up'
-  degs[degs$p_val_adj < 0.05 & degs$avg_log2FC <= -0.25 & degs$pct.1 >= 0.1, ]$UpDown <- 'Down'
+  degs$UpDown <- rep('not.sig', nrow(degs))
+  up_idx <- degs$p_val_adj < 0.05 & degs$avg_log2FC >= 0.25 & degs$pct.1 >= 0.1
+  down_idx <- degs$p_val_adj < 0.05 & degs$avg_log2FC <= -0.25 & degs$pct.1 >= 0.1
+  degs$UpDown[which(up_idx)] <- 'Up'
+  degs$UpDown[which(down_idx)] <- 'Down'
   
   # 归档数据
   saveRDS(degs, file.path(outdir, 'DEGs.rds'))
@@ -408,9 +421,11 @@ group_de_by_subtype <- function(data, split_by, condition, cmp_file, outdir, ass
       mks$subtype <- st
       
       # 判定
-      mks$UpDown <- 'Not.sig'
-      mks[mks$avg_log2FC >= 0.25 & mks$p_val_adj < 0.05, ]$UpDown <- 'Up'
-      mks[mks$avg_log2FC <= -0.25 & mks$p_val_adj < 0.05, ]$UpDown <- 'Down'
+      mks$UpDown <- rep('Not.sig', nrow(mks))
+      up_idx <- mks$avg_log2FC >= 0.25 & mks$p_val_adj < 0.05
+      down_idx <- mks$avg_log2FC <= -0.25 & mks$p_val_adj < 0.05
+      mks$UpDown[which(up_idx)] <- 'Up'
+      mks$UpDown[which(down_idx)] <- 'Down'
       mks <- setorderv(mks, c("avg_log2FC", "pct.1", "pct.2"), c(-1, -1, 1))
       
       # 写出明细
