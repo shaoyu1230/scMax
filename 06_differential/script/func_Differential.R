@@ -12,6 +12,250 @@ suppressMessages(library(ggplot2))
 suppressMessages(library(SCP))
 suppressMessages(library(SeuratWrappers))
 
+plotgo <- function(Markers_GO_enrich, outdir = "./", prefix = "",
+                   titlei = "GO Enrichment") {
+  CPCOLS <- c("#6495ED", "#8FBC8F", "#F4A460")
+  mtx <- Markers_GO_enrich@result
+  mtx$plt <- -log10(mtx$pvalue)
+  dmtx <- dplyr::group_by(mtx, ONTOLOGY) %>% dplyr::top_n(10, plt)
+  dorder <- factor(rev(as.integer(rownames(dmtx))), labels = rev(dmtx$Description))
+
+  pbar <- ggplot(dmtx, aes(x = Description, y = plt, fill = ONTOLOGY)) +
+    geom_bar(stat = "identity", position = position_dodge(0.7), width = 0.5, aes(x = dorder)) +
+    scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 70)) +
+    coord_flip() +
+    scale_y_log10(breaks = c(1, 10, 100, 1000)) +
+    theme(panel.background = element_rect(fill = "transparent", colour = NA)) +
+    xlab("GO_Term") + ylab(expression(-"log"["10"] * "(PValue)")) + theme_bw() +
+    scale_fill_manual(values = CPCOLS) + labs(title = titlei)
+
+  pdot <- ggplot(dmtx, aes(x = plt, y = dorder)) +
+    geom_point(aes(size = Count, color = -1 * log(pvalue), shape = ONTOLOGY)) +
+    scale_color_gradient(low = "steelblue", high = "indianred") +
+    scale_y_discrete(labels = function(y) stringr::str_wrap(y, width = 70)) +
+    labs(color = expression(-log[10](pvalue)), size = "Count",
+         x = expression(-"log"["10"] * "(PValue)"), y = "Go_term", title = titlei) +
+    theme_bw()
+
+  ggsave(paste0(outdir, "/", prefix, "GO_bar.pdf"), pbar, width = 8, height = 8)
+  ggsave(paste0(outdir, "/", prefix, "GO_bar.png"), pbar, width = 8, height = 8)
+  ggsave(paste0(outdir, "/", prefix, "GO_dot.png"), pdot, width = 8, height = 8)
+  ggsave(paste0(outdir, "/", prefix, "GO_dot.pdf"), pdot, width = 8, height = 8)
+}
+
+plotkegg <- function(keggresultfile, outdir = "./", prefix = "", titlei = "") {
+  mtx <- openxlsx::read.xlsx(keggresultfile)
+  mtx$plt <- -log10(mtx$pvalue)
+  if (nrow(mtx) >= 30) {
+    dmtx <- dplyr::top_n(mtx, 30, plt)
+  } else {
+    dmtx <- mtx
+  }
+  dorder <- factor(rev(as.integer(rownames(dmtx))), labels = rev(dmtx$Description))
+
+  pbar <- ggplot(dmtx, aes(x = Description, y = plt, fill = plt)) +
+    geom_bar(stat = "identity", position = position_dodge(0.7), width = 0.5, aes(x = dorder)) +
+    scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 60)) +
+    coord_flip() +
+    theme(panel.background = element_rect(fill = "transparent", colour = NA)) +
+    xlab("Term") + ylab(expression(-"log"["10"] * "(PValue)")) +
+    theme_bw() +
+    scale_fill_gradientn(colours = c("steelblue", "yellow", "red")) +
+    labs(title = titlei, fill = expression(-log[10](pvalue)))
+
+  pdot <- ggplot(dmtx, aes(x = plt, y = dorder)) +
+    geom_point(aes(size = Count, color = -1 * log(pvalue))) +
+    scale_color_gradient(low = "steelblue", high = "indianred") +
+    scale_y_discrete(labels = function(y) stringr::str_wrap(y, width = 70)) +
+    labs(color = expression(-log[10](pvalue)), size = "Count",
+         x = expression(-"log"["10"] * "(PValue)"), y = "KEGG_term", title = titlei) +
+    theme_bw()
+
+  ggsave(paste0(outdir, "/", prefix, "KEGG_bar.pdf"), pbar, width = 8, height = 8)
+  ggsave(paste0(outdir, "/", prefix, "KEGG_bar.png"), pbar, width = 8, height = 8)
+  ggsave(paste0(outdir, "/", prefix, "KEGG_dot.pdf"), pdot, width = 8, height = 8)
+  ggsave(paste0(outdir, "/", prefix, "KEGG_dot.png"), pdot, width = 8, height = 8)
+}
+
+GeneList2GOKEGG <- function(infile, orgdb = "org.Rn.eg.db", organism_kegg = "rno",
+                            outdir, prefix = "", runGO = TRUE, runKEGG = TRUE, title = "") {
+  suppressMessages(library(clusterProfiler))
+  suppressMessages(library(KEGG.db))
+
+  intersectGenes <- read.table(infile)[, 1]
+
+  if (runGO) {
+    Markers_GO_enrich <- enrichGO(
+      intersectGenes,
+      OrgDb = orgdb,
+      ont = "ALL",
+      pAdjustMethod = "BH",
+      pvalueCutoff = 0.05,
+      qvalueCutoff = 0.2,
+      keyType = "SYMBOL",
+      readable = TRUE
+    )
+    if (!is.null(Markers_GO_enrich) && nrow(Markers_GO_enrich@result) > 0) {
+      openxlsx::write.xlsx(Markers_GO_enrich@result, paste0(outdir, "/", prefix, "GO.xlsx"))
+      plotgo(Markers_GO_enrich, outdir = outdir, prefix = prefix, titlei = paste0(title, "GO Enrichment"))
+    }
+  }
+
+  if (runKEGG) {
+    eg <- bitr(intersectGenes, fromType = "SYMBOL", toType = c("ENTREZID"), OrgDb = orgdb)
+    genelist <- eg$ENTREZID[!is.na(eg$ENTREZID)]
+    keggresult <- enrichKEGG(
+      gene = genelist,
+      use_internal_data = TRUE,
+      organism = organism_kegg,
+      keyType = "kegg",
+      pvalueCutoff = 0.05,
+      qvalueCutoff = 0.2
+    )
+    if (!is.null(keggresult)) {
+      keggresult <- setReadable(keggresult, orgdb, keyType = "ENTREZID")
+      openxlsx::write.xlsx(keggresult@result, paste0(outdir, "/", prefix, "KEGG.xlsx"))
+      plotkegg(
+        keggresultfile = paste0(outdir, "/", prefix, "KEGG.xlsx"),
+        outdir = outdir,
+        prefix = prefix,
+        titlei = paste0(title, "KEGG Enrichment")
+      )
+    }
+  }
+}
+
+plot_group_volcano <- function(deg_df, g1, g2, out_prefix, top_n = 8) {
+  df <- as.data.frame(deg_df)
+  if (nrow(df) == 0) {
+    return(invisible(NULL))
+  }
+
+  df$gene_label <- ""
+  df$neglog10_padj <- -log10(pmax(df$p_val_adj, 1e-300))
+  df$neglog10_padj[!is.finite(df$neglog10_padj)] <- max(df$neglog10_padj[is.finite(df$neglog10_padj)], na.rm = TRUE)
+  if (!all(is.finite(df$neglog10_padj))) {
+    df$neglog10_padj[!is.finite(df$neglog10_padj)] <- 0
+  }
+
+  sig_up <- df[df$UpDown == "Up", , drop = FALSE]
+  sig_down <- df[df$UpDown == "Down", , drop = FALSE]
+  label_df <- rbind(
+    head(sig_up[order(-sig_up$avg_log2FC, -sig_up$neglog10_padj), , drop = FALSE], top_n),
+    head(sig_down[order(sig_down$avg_log2FC, -sig_down$neglog10_padj), , drop = FALSE], top_n)
+  )
+  label_genes <- unique(as.character(label_df$gene))
+  df$gene_label[df$gene %in% label_genes] <- df$gene[df$gene %in% label_genes]
+
+  p <- ggplot(df, aes(x = avg_log2FC, y = neglog10_padj, color = UpDown)) +
+    geom_point(size = 1.1, alpha = 0.75) +
+    geom_vline(xintercept = c(-0.25, 0.25), linetype = "dashed", color = "grey60") +
+    geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey60") +
+    scale_color_manual(values = c("Up" = "#d73027", "Down" = "#4575b4", "Not.sig" = "grey75")) +
+    labs(
+      title = paste0(g1, " vs ", g2),
+      x = "avg_log2FC",
+      y = expression(-log[10]("adj.P"))
+    ) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5), legend.title = element_blank())
+
+  if (any(df$gene_label != "")) {
+    p <- p + geom_text(
+      data = df[df$gene_label != "", , drop = FALSE],
+      aes(label = gene_label),
+      size = 2.8,
+      check_overlap = TRUE,
+      vjust = -0.2
+    )
+  }
+
+  ggsave(paste0(out_prefix, ".pdf"), p, width = 6, height = 5)
+  ggsave(paste0(out_prefix, ".png"), p, width = 6, height = 5)
+  invisible(p)
+}
+
+run_group_enrich <- function(deg_df, g1, g2, subtype_name, outdir, orgdb, organism_kegg) {
+  enrich_dir <- file.path(outdir, "3_Enrich")
+  dir.create(enrich_dir, recursive = TRUE, showWarnings = FALSE)
+
+  up_genes <- unique(as.character(deg_df$gene[deg_df$UpDown == "Up"]))
+  down_genes <- unique(as.character(deg_df$gene[deg_df$UpDown == "Down"]))
+  gene_sets <- list(Up = up_genes, Down = down_genes)
+
+  for (direction in names(gene_sets)) {
+    genes <- gene_sets[[direction]]
+    if (length(genes) < 5) {
+      message(sprintf("      富集跳过 [%s - %s]: 基因数过少 (%d)", subtype_name, direction, length(genes)))
+      next
+    }
+
+    gene_file <- file.path(enrich_dir, paste0(direction, ".genes.txt"))
+    write.table(genes, gene_file, row.names = FALSE, col.names = FALSE, quote = FALSE)
+
+    prefix <- paste0(direction, ".")
+    title <- paste0(subtype_name, " ", g1, " vs ", g2, " ", direction, " ")
+    tryCatch(
+      GeneList2GOKEGG(
+        infile = gene_file,
+        orgdb = orgdb,
+        organism_kegg = organism_kegg,
+        outdir = enrich_dir,
+        prefix = prefix,
+        runGO = TRUE,
+        runKEGG = TRUE,
+        title = title
+      ),
+      error = function(e) {
+        warning(sprintf("富集分析失败 [%s - %s]: %s", subtype_name, direction, conditionMessage(e)))
+      }
+    )
+  }
+
+  invisible(TRUE)
+}
+
+cluster_enrich <- function(derds, orgdb = "org.Hs.eg.db", organism_kegg = "hsa",
+                           enrichdir = "Enrich") {
+  suppressMessages(library(KEGG.db))
+  if (!dir.exists(enrichdir)) {
+    dir.create(enrichdir, recursive = TRUE)
+  }
+
+  degs <- readRDS(derds)
+  clusters <- unique(degs$cluster)
+  degs.up <- degs[degs$p_val_adj < 0.05 & degs$avg_log2FC >= 0.25 & degs$pct.1 >= 0.1, ]
+  tmpdir <- file.path(enrichdir, "..", "..", "tmp")
+  if (!dir.exists(tmpdir)) {
+    dir.create(tmpdir, recursive = TRUE)
+  }
+
+  for (c in clusters) {
+    genes <- degs.up[degs.up$cluster == c, ]$gene
+    write.table(genes, file.path(tmpdir, paste0(c, ".up.txt")),
+                row.names = FALSE, quote = FALSE, col.names = FALSE)
+  }
+
+  print(paste0(date(), " - Enrichment preparation finish!"))
+  file.list <- list.files(tmpdir, pattern = "up.txt$")
+  print(paste0(date(), " - Enrichment analysis starts!"))
+  for (file in file.list) {
+    prefix <- gsub(".txt$", "", file)
+    infile <- file.path(tmpdir, file)
+    GeneList2GOKEGG(
+      infile = infile,
+      orgdb = orgdb,
+      organism_kegg = organism_kegg,
+      outdir = enrichdir,
+      prefix = paste0(prefix, "."),
+      runGO = TRUE,
+      runKEGG = TRUE,
+      title = paste0(prefix, " ")
+    )
+  }
+  print(paste0(date(), " - Enrichment analysis finish!"))
+}
+
 # --- [模式 A] 全标签组差异核心函数 ---
 # input: Seurat对象, 比较列, 输出路径
 cluster_de_all <- function(data, assay='RNA', groupby='seurat_clusters', outdir){
@@ -78,7 +322,8 @@ cluster_de_all <- function(data, assay='RNA', groupby='seurat_clusters', outdir)
 
 # --- [模式 B] 亚群内组间两两比较核心函数 ---
 # input: Seurat对象, 亚群拆分列(如CellType), 比较列(如Group), 比较列表文件, 输出路径
-group_de_by_subtype <- function(data, split_by, condition, cmp_file, outdir, assay='RNA'){
+group_de_by_subtype <- function(data, split_by, condition, cmp_file, outdir, assay='RNA',
+                                do_enrich = FALSE, orgdb = "org.Hs.eg.db", organism_kegg = "hsa"){
   cat("=> [DE] 启动模式 B: 亚群内组间精细比较 (Subtype Pairwise DE)...\n")
   dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
   min_cells_per_group <- 3
@@ -171,9 +416,23 @@ group_de_by_subtype <- function(data, split_by, condition, cmp_file, outdir, ass
       st_out_dir <- file.path(pair_dir, paste0(comp_name, "_", st_safe))
       dir.create(st_out_dir, showWarnings = FALSE)
       write.csv(mks, file.path(st_out_dir, "1_DEGs_all.csv"), row.names = FALSE, quote = FALSE)
-      
-      # 写入 Sheet
       sig_df <- mks[mks$UpDown != 'Not.sig', ]
+      write.csv(sig_df, file.path(st_out_dir, "1_DEGs_FDR0.05.csv"), row.names = FALSE, quote = FALSE)
+      plot_group_volcano(mks, g1 = g1, g2 = g2, out_prefix = file.path(st_out_dir, "2_Volcano"))
+      
+      if (isTRUE(do_enrich)) {
+        run_group_enrich(
+          deg_df = mks,
+          g1 = g1,
+          g2 = g2,
+          subtype_name = st,
+          outdir = st_out_dir,
+          orgdb = orgdb,
+          organism_kegg = organism_kegg
+        )
+      }
+
+      # 写入 Sheet
       if (nrow(sig_df) > 0) {
         # 截断名字以符合Excel限制 (31字符)
         sheet_n <- paste0(substr(st_safe, 1, 25), "_", i)
@@ -194,11 +453,10 @@ cluster_enrich_auto <- function(derds, orgdb, organism_kegg, outdir){
     return()
   }
   
-  # 复用已定义的逻辑
-  if (exists("cluster_enrich")) {
-     cluster_enrich(derds = derds, orgdb = orgdb, organism_kegg = organism_kegg, 
-                    enrichdir = file.path(outdir, "4_Enrich"))
-  } else {
-     warning("无法定位到基础富集函数 cluster_enrich，请检查 func_scRNA_celltype_anno.R 是否成功加载。")
-  }
+  cluster_enrich(
+    derds = derds,
+    orgdb = orgdb,
+    organism_kegg = organism_kegg,
+    enrichdir = file.path(outdir, "4_Enrich")
+  )
 }

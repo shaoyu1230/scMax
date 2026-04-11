@@ -30,16 +30,6 @@ opt <- parser$parse_args()
 # --- 1. 环境准备与函数库加载 ---
 script_dir <- this.path::this.dir()
 
-# 加载 scMax 核心公共库 (复用富集与绘图底层逻辑)
-# script_dir = <repo>/06_differential/script，因此需要向上跳两级到仓库根目录
-repo_dir <- dirname(dirname(script_dir))
-func_common <- file.path(repo_dir, "05_celltype", "script", "func_scRNA_celltype_anno.R")
-if (file.exists(func_common)) {
-  source(func_common)
-} else {
-  cat("! 警告: 未能找到公共函数库 func_scRNA_celltype_anno.R，部分富集功能可能受限。\n")
-}
-
 # 加载本模块私有核心库
 func_private <- file.path(script_dir, "func_Differential.R")
 if (file.exists(func_private)) {
@@ -83,7 +73,10 @@ if (opt$method == "all_markers") {
                       condition = opt$groupby, 
                       cmp_file = opt$cmp_file, 
                       outdir = opt$outdir, 
-                      assay = opt$assay)
+                      assay = opt$assay,
+                      do_enrich = isTRUE(opt$do_enrich),
+                      orgdb = opt$orgdb,
+                      organism_kegg = opt$organism_kegg)
   
   # 注意：模式 B 产生的差异文件较为分散(每个比较对/每个亚群一个目录)，
   # 如果需要执行富集，建议在此处增加对输出目录的遍历调用或由用户后续手动触发。
