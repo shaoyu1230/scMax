@@ -66,6 +66,9 @@ if (is.null(inputrds) || inputrds == '') {
   inputrds <- ct_conf$rdsfile
 }
 annotated_rds <- opt$annotated_rds
+if ((is.null(inputrds) || inputrds == '') && !is.null(annotated_rds) && annotated_rds != '') {
+  inputrds <- annotated_rds
+}
 
 annofile <- if (opt$annofile != '') opt$annofile else ct_conf$annofile
 clustercol <- if (opt$cluster_col != '') opt$cluster_col else ct_conf$cluster_col
@@ -331,7 +334,18 @@ if(do_celltype){
 
 if(do_celltype_de){
   if (is.null(data.f)) {
-    stop('do_celltype_de requires annotated data.')
+    if (is.null(data_anno)) {
+      stop('do_celltype_de requires annotated data.')
+    }
+    celltype.keep <- ct_conf$celltype_keep
+    if (is.null(celltype.keep) || length(celltype.keep) == 0 || celltype.keep == '') {
+      celltype.keep <- unique(data_anno@meta.data[,celltype_col])
+    } else {
+      celltype.keep <- strsplit(celltype.keep, "\\s*,\\s*")[[1]]
+    }
+    keep.cells <- rownames(data_anno@meta.data[data_anno@meta.data[,celltype_col] %in% celltype.keep,])
+    data.f <- subset(data_anno,cells=keep.cells)
+    data.f@meta.data[,celltype_col] <- droplevels(data.f@meta.data[,celltype_col])
   }
   library(SeuratWrappers)
   diffgene <- celltype_de(data.f,rdsdir=file.path(outdir,'/Rdata'),celltype_col=celltype_col,outdir=paste0(outdir,'/celltype_characterization/1_CellType_DE'))

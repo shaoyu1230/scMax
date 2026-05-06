@@ -389,13 +389,15 @@ def generate_celltype_cmd(config, rscript_cmd, base_dir, next_input_rds, config_
     
     # 注入配置快照
     script_content += get_config_snapshot_sh(celltype_conf, os.path.join(celltype_out, "config_snapshot.yaml"))
+    runtime_config_file = os.path.join(celltype_out, "config_runtime.yaml")
+    script_content += get_config_snapshot_sh(config, runtime_config_file)
     
     user_rds = celltype_conf.get("rdsfile", "")
     if user_rds:
         next_input_rds = user_rds
         
     annofile = celltype_conf.get("annofile", "")
-    louper_path = celltype_conf.get("louper_path", "")
+    louper_path = config.get("louper_path", "") or celltype_conf.get("louper_path", "")
     
     do_cluster = celltype_conf.get("do_cluster", True)
     do_refmarker = celltype_conf.get("do_refmarker", True)
@@ -403,6 +405,9 @@ def generate_celltype_cmd(config, rscript_cmd, base_dir, next_input_rds, config_
     do_celltype = celltype_conf.get("do_celltype", True)
     do_celltype_de = celltype_conf.get("do_celltype_de", False)
     do_report = celltype_conf.get("do_report", True)
+    do_formats = celltype_conf.get("do_formats", True)
+    do_upload = celltype_conf.get("do_upload", True)
+    do_r_analysis = any([do_cluster, do_refmarker, do_annotation, do_celltype, do_celltype_de])
     
     if do_annotation and not annofile:
         return "echo 'Error: 启用 do_annotation 注释阶段但未传入映射注释表(annofile)！'\nexit 1\n", "", ""
@@ -443,10 +448,40 @@ fi
         dyn_args += " ${SKIP_REFMARKER_FLAG}"
         rscript_skip_flags += " ${RSCRIPT_SKIP_REFMARKER}"
 
-    cmd = f"{rscript_cmd} {script_dir}/scCellType.R --config '{config_file}' --outdir \"{celltype_out}\" --inputrds \"{next_input_rds}\"{rscript_skip_flags}\n\n"
+    cmd = ""
+    if do_r_analysis:
+        if not next_input_rds and not celltype_conf.get("annotated_rds", ""):
+            return "echo 'Error: 启用 05_celltype 分析子步骤但未提供 rdsfile 或 annotated_rds！'\nexit 1\n", "", ""
+        cmd = f"{rscript_cmd} {script_dir}/scCellType.R --config \"{runtime_config_file}\" --outdir \"{celltype_out}\""
+        if next_input_rds:
+            cmd += f" --inputrds \"{next_input_rds}\""
+        annotated_rds = celltype_conf.get("annotated_rds", "")
+        if annotated_rds:
+            cmd += f" --annotated_rds \"{annotated_rds}\""
+        option_map = {
+            "annofile": "--annofile",
+            "cluster_col": "--cluster_col",
+            "celltype_col": "--celltype_col",
+            "col_sample": "--col_sample",
+            "col_group": "--col_group",
+            "sample_order": "--sample_order",
+            "group_order": "--group_order",
+            "cluster_colors": "--cluster_colors",
+            "celltype_levels": "--celltype_levels",
+            "celltype_colors": "--celltype_colors",
+            "refmarker_file": "--refmarker_file",
+            "metacsv": "--metacsv",
+        }
+        for conf_key, cli_key in option_map.items():
+            value = celltype_conf.get(conf_key, "")
+            if value:
+                cmd += f" {cli_key} \"{value}\""
+        cmd += f"{rscript_skip_flags}\n\n"
+    else:
+        cmd += "# >>> 未选择 05_celltype 的 R 分析子步骤，跳过 scCellType.R，只处理报告/交付整理 <<<\n\n"
     
-    python_path = celltype_conf.get("python_path", "python3")
-    jupyter_path = celltype_conf.get("jupyter_path", "jupyter")
+    python_path = config.get("python_path", "") or celltype_conf.get("python_path", "") or "python3"
+    jupyter_path = config.get("jupyter_path", "") or celltype_conf.get("jupyter_path", "") or "jupyter"
     
     if do_annotation: dyn_args += " --do_annotation"
     if do_celltype: dyn_args += " --do_celltype"
@@ -457,37 +492,45 @@ fi
         dyn_args += " --no_group"
     
     if do_report:
-        cmd += "# >>> do_report 为 true，确认最终细胞类型注释完毕，组装出结题动态可视化报告及转化其他各平台交付格式(h5ad/cloupe) <<<\n"
+        cmd += "# >>> do_report 为 true，基于当前 output 目录已有结果组装结题动态可视化报告 <<<\n"
         cmd += f"{python_path} {script_dir}/generate_dynamic_report.py {dyn_args}\n"
         cmd += f"cd {celltype_out} && {jupyter_path} nbconvert --no-input --template pj --HTMLExporter.embed_images=True --to html report_custom.ipynb && mv report_custom.html CellType.Annotation_report.html\n\n"
-        
-        cmd += f"{rscript_cmd} -e \"suppressMessages(library(SeuratDisk)); data <- readRDS('{celltype_out}/Rdata/Data-Annotation_CellType.rds'); SaveH5Seurat(data, filename = '{celltype_out}/Data_CellAnnotated.h5Seurat', overwrite=TRUE); Convert('{celltype_out}/Data_CellAnnotated.h5Seurat', dest = 'h5ad', overwrite=TRUE); unlink('{celltype_out}/Data_CellAnnotated.h5Seurat')\"\n"
+    else:
+        cmd += "# >>> do_report 为 false，代表注释处于检查确认的中间态，在此跳过耗时的动态图文 HTML 报告渲染 <<<\n\n"
+
+    if do_formats:
+        cmd += "# >>> do_formats 为 true，基于注释 RDS 转换 h5ad/cloupe 交付格式 <<<\n"
+        cmd += f"if [ ! -s \"{celltype_out}/Rdata/Data-Annotation_CellType.rds\" ]; then echo 'Error: do_formats 需要 {celltype_out}/Rdata/Data-Annotation_CellType.rds'; exit 1; fi\n"
+        # cmd += f"{rscript_cmd} -e \"suppressMessages(library(SeuratDisk)); data <- readRDS('{celltype_out}/Rdata/Data-Annotation_CellType.rds'); SaveH5Seurat(data, filename = '{celltype_out}/Data_CellAnnotated.h5Seurat', overwrite=TRUE); Convert('{celltype_out}/Data_CellAnnotated.h5Seurat', dest = 'h5ad', overwrite=TRUE); unlink('{celltype_out}/Data_CellAnnotated.h5Seurat')\"\n"
         louper_arg = f" --louper_path \"{louper_path}\"" if louper_path else ""
         cmd += f"{rscript_cmd} {script_dir}/rds2cloupe.R -i \"{celltype_out}/Rdata/Data-Annotation_CellType.rds\" -o \"{celltype_out}\" -n Data_CellAnnotated_Cloupe{louper_arg}\n\n"
     else:
-        cmd += "# >>> do_report 为 false，代表注释处于检查确认的中间态，在此跳过耗时的动态图文 HTML 报告渲染及 h5ad/cloupe 格式转换步骤 <<<\n\n"
+        cmd += "# >>> do_formats 为 false，跳过 h5ad/cloupe 转换 <<<\n\n"
     
-    cmd += f"(\ncd {celltype_upload}\n"
-    cmd += f"ln -sf ../output/cluster_characterization .\n"
-    cmd += f"ln -sf ../output/marker_expression .\n"
-    cmd += f"ln -sf ../output/annotation .\n"
-    cmd += f"ln -sf ../output/celltype_fraction .\n"
-    cmd += f"ln -sf ../output/celltype_characterization .\n"
-    cmd += f"ln -sf ../output/CellType.Annotation_report.html .\n"
-    cmd += f"ln -sf ../output/Rdata/Data-Annotation_CellType.rds .\n"
-    readme_content = (
-        "├── Data-Annotation_CellType.rds       分析结果的Seurat对象，需要用 R 语言读取\n"
-        "├── cluster_characterization         cluster特征：包括cluster分布，样本/分组分布，cluster占比等\n"
-        "├── marker_expression                参考marker表达绘图\n"
-        "├── annotation                       细胞类型注释结果\n"
-        "│   ├── CellType_All                   所有细胞注释结果\n"
-        "│   └── CellType_Keep                  去除低质量、doublet等不感兴趣的细胞后，细胞注释结果\n"
-        "├── celltype_fraction                细胞占比分析\n"
-        "├── celltype_characterization        细胞类型特征，包括差异分析和富集分析\n"
-        "└── CellType.Annotation_report.html    细胞类型注释报告\n"
-    )
-    cmd += f"cat << 'EOF' > 结果文件说明.txt\n{readme_content}EOF\n"
-    cmd += ")\n\n"
+    if do_upload:
+        cmd += f"(\ncd {celltype_upload}\n"
+        cmd += f"ln -sf ../output/cluster_characterization .\n"
+        cmd += f"ln -sf ../output/marker_expression .\n"
+        cmd += f"ln -sf ../output/annotation .\n"
+        cmd += f"ln -sf ../output/celltype_fraction .\n"
+        cmd += f"ln -sf ../output/celltype_characterization .\n"
+        cmd += f"ln -sf ../output/CellType.Annotation_report.html .\n"
+        cmd += f"ln -sf ../output/Rdata/Data-Annotation_CellType.rds .\n"
+        readme_content = (
+            "├── Data-Annotation_CellType.rds       分析结果的Seurat对象，需要用 R 语言读取\n"
+            "├── cluster_characterization         cluster特征：包括cluster分布，样本/分组分布，cluster占比等\n"
+            "├── marker_expression                参考marker表达绘图\n"
+            "├── annotation                       细胞类型注释结果\n"
+            "│   ├── CellType_All                   所有细胞注释结果\n"
+            "│   └── CellType_Keep                  去除低质量、doublet等不感兴趣的细胞后，细胞注释结果\n"
+            "├── celltype_fraction                细胞占比分析\n"
+            "├── celltype_characterization        细胞类型特征，包括差异分析和富集分析\n"
+            "└── CellType.Annotation_report.html    细胞类型注释报告\n"
+        )
+        cmd += f"cat << 'EOF' > 结果文件说明.txt\n{readme_content}EOF\n"
+        cmd += ")\n\n"
+    else:
+        cmd += "# >>> do_upload 为 false，跳过 upload 目录软链整理 <<<\n\n"
     script_content += cmd
     return script_content, os.path.join(celltype_out, "Rdata", "Data-Annotation_CellType.rds"), celltype_out
 
@@ -577,6 +620,9 @@ def generate_bash_script(config_file, script_outdir):
         if celltype_conf.get("do_annotation", True): sub_opts.append("anno")
         if celltype_conf.get("do_celltype", True): sub_opts.append("ctype")
         if celltype_conf.get("do_celltype_de", False): sub_opts.append("de")
+        if celltype_conf.get("do_report", True): sub_opts.append("report")
+        if celltype_conf.get("do_formats", True): sub_opts.append("formats")
+        if celltype_conf.get("do_upload", True): sub_opts.append("upload")
         if sub_opts:
             run_steps.append("05_" + "-".join(sub_opts))
         else:

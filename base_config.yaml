@@ -9,13 +9,13 @@ Rscript_path: "Rscript"
 
 # ------ 全局核心元数据配置 ------
 Database_Info:
-  run: true                 # 是否连通知识图谱与后台数据库登记
+  run: false                 # 是否连通知识图谱与后台数据库登记
   
   # ------ 知识图谱与后台数据库登记信息（保持与 config_template 词条全小写规范一致） ------
   std_project_id: ""              # 标分项目编号
   custom_project_id: "scMax_Demo" # 个性化项目编号 (原 Project_Name)
   crm_id: ""                      # crm下单编号
-  annotation_level: "MajorType"   # 分群层次 (重要，直接影响分析层级界定)
+#  annotation_level: "MajorType"   # 分群层次 (重要，直接影响分析层级界定)
   species: "Human"                # 物种信息 (英文，原 Species / species)
   species_zh: "人"                 # 物种中文信息
   tissue_type: "PBMC"             # 组织类型英文 (原 Organ)

@@ -31,6 +31,8 @@
   do_celltype: false         # 绘制 CellType UMAP 和 比例图
   do_celltype_de: false     # 是否计算已注释细胞类型的 Marker 并做富集（耗时）
   do_report: false           # 是否生成 HTML 动态交互可视化报告
+  do_formats: true           # do_report 后是否额外转换 h5ad/cloupe 等交付格式
+  do_upload: true            # 是否整理 upload 目录软链和结果说明
   
   force_clean: false        # 是否运行前强制清空 05 输出目录
   annotated_rds: ""         # [可选] 若已有注释过的 RDS，可直接读取路径跳过 do_annotation

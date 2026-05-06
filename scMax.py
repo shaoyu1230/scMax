@@ -87,6 +87,9 @@ def run_step(step_name, args, step_conf):
         if step_conf.get("do_annotation", True): sub_opts.append("anno")
         if step_conf.get("do_celltype", True): sub_opts.append("ctype")
         if step_conf.get("do_celltype_de", False): sub_opts.append("de")
+        if step_conf.get("do_report", True): sub_opts.append("report")
+        if step_conf.get("do_formats", True): sub_opts.append("formats")
+        if step_conf.get("do_upload", True): sub_opts.append("upload")
         
         if sub_opts:
             run_opts = ["05_" + "-".join(sub_opts)]
@@ -99,6 +102,79 @@ def run_step(step_name, args, step_conf):
     )
     print(f"-> 成功根据子命令 `{args.command}` 生成执行脚本：{sh_file}")
     print(f"您可以运行：sh {sh_file}")
+
+def canonical_template_target(src_name):
+    mapping = {
+        "config_template.yaml": "base_config.yaml",
+        "config_template_01_qc.yaml": "01_scQC.yaml",
+        "config_template_02_filter.yaml": "02_filter.yaml",
+        "config_template_03_cluster.yaml": "03_cluster.yaml",
+        "config_template_04_subcluster.yaml": "04_subcluster.yaml",
+        "config_template_05_celltype.yaml": "05_celltype.yaml",
+        "config_template_06_merge_sub.yaml": "06_merge_sub.yaml",
+        "config_template_07_diff.yaml": "07_differential.yaml",
+        # 兼容旧模板文件名，但输出仍统一为规范名称
+        "config_template_06_diff.yaml": "07_differential.yaml",
+    }
+    return mapping.get(src_name, src_name)
+
+def parse_csv_steps(raw_value):
+    """Parse comma-separated step names while keeping argparse messages friendly."""
+    if not raw_value:
+        return []
+    return [item.strip().lower() for item in raw_value.split(",") if item.strip()]
+
+def apply_celltype_step_selection(conf, args):
+    aliases = {
+        "clus": "cluster",
+        "cluster": "cluster",
+        "ref": "refmarker",
+        "refm": "refmarker",
+        "refmarker": "refmarker",
+        "marker": "refmarker",
+        "anno": "annotation",
+        "annotation": "annotation",
+        "ctype": "celltype",
+        "celltype": "celltype",
+        "fraction": "celltype",
+        "de": "de",
+        "celltype_de": "de",
+        "report": "report",
+        "html": "report",
+        "formats": "formats",
+        "format": "formats",
+        "delivery": "formats",
+        "upload": "upload",
+    }
+    key_map = {
+        "cluster": "do_cluster",
+        "refmarker": "do_refmarker",
+        "annotation": "do_annotation",
+        "celltype": "do_celltype",
+        "de": "do_celltype_de",
+        "report": "do_report",
+        "formats": "do_formats",
+        "upload": "do_upload",
+    }
+    selected = []
+    for value in parse_csv_steps(args.steps) + parse_csv_steps(args.only):
+        step = aliases.get(value)
+        if not step:
+            valid = ", ".join(sorted(aliases))
+            print(f"Error: 05_celltype 不支持的子步骤 `{value}`。可选：{valid}")
+            sys.exit(1)
+        selected.append(step)
+
+    if not selected:
+        return conf
+
+    selected = set(selected)
+    for key in key_map.values():
+        conf[key] = False
+    for step in selected:
+        conf[key_map[step]] = True
+
+    return conf
 
 def main():
     parser = argparse.ArgumentParser(
@@ -194,8 +270,20 @@ def main():
     parser_celltype.add_argument("-c", "--config", default="base_config.yaml", help="基础配置")
     parser_celltype.add_argument("-o", "--outdir", default=".", help="输出目录")
     parser_celltype.add_argument("--rds", default="", help="终态降维后未注释对象RDS；留空则从配置文件读取")
+    parser_celltype.add_argument("--annotated_rds", default="", help="已有注释 RDS；用于只跑 CellType 图、DE 或格式转换")
     parser_celltype.add_argument("--annofile", default="", help="关键！打签校准对照映射文件")
+    parser_celltype.add_argument("--refmarker_file", default="", help="参考 Marker 列表文件路径")
     parser_celltype.add_argument("--louper_path", default="", help="转化为 10X cloupe 浏览器数据的工具位置(可留空跳过)")
+    parser_celltype.add_argument(
+        "--steps",
+        default="",
+        help="只执行指定 05 子步骤，逗号分隔：cluster,refmarker,annotation,celltype,de,report,formats,upload"
+    )
+    parser_celltype.add_argument(
+        "--only",
+        default="",
+        help="--steps 的别名；例如 --only report 表示只从已有 output 目录生成 HTML 报告"
+    )
     
     # 因为开关逻辑在 Python 用 flags 非常顺畅，默认它们全开，可以用 flag 手动关闭
     parser_celltype.add_argument("--skip_cluster", action="store_false", dest="do_cluster", help="跳过自动渲染群组属性(节约时间/或被智能软链替代)")
@@ -204,6 +292,8 @@ def main():
     parser_celltype.add_argument("--skip_celltype", action="store_false", dest="do_celltype", help="忽略细胞大类占比分化与UMAP产出")
     parser_celltype.add_argument("--do_celltype_de", action="store_true", help="对所有最终命名的细胞做一次大规模型号比对富集")
     parser_celltype.add_argument("--skip_report", action="store_false", dest="do_report", help="跳过最终结题炫酷动态长网页 HTML 渲染与多格式转化步骤")
+    parser_celltype.add_argument("--skip_formats", action="store_false", dest="do_formats", help="跳过 h5ad/cloupe 等交付格式转换")
+    parser_celltype.add_argument("--skip_upload", action="store_false", dest="do_upload", help="跳过 upload 目录软链整理")
     parser_celltype.add_argument("--force_clean", action="store_true", help="是否暴力格式化目标输出位点")
 
     # ---------------------------------------------------------
@@ -330,16 +420,25 @@ def main():
 
     elif args.command == "celltype":
         conf = {
-            "annofile": args.annofile,
-            "louper_path": args.louper_path,
             "do_cluster": args.do_cluster,
             "do_refmarker": args.do_refmarker,
             "do_annotation": args.do_annotation,
             "do_celltype": args.do_celltype,
             "do_celltype_de": args.do_celltype_de,
             "do_report": args.do_report,
+            "do_formats": args.do_formats,
+            "do_upload": args.do_upload,
             "force_clean": args.force_clean
         }
+        for key, value in {
+            "annofile": args.annofile,
+            "refmarker_file": args.refmarker_file,
+            "louper_path": args.louper_path,
+            "annotated_rds": args.annotated_rds,
+        }.items():
+            if value != "":
+                conf[key] = value
+        conf = apply_celltype_step_selection(conf, args)
         if args.rds != "":
             conf["rdsfile"] = args.rds
         run_step("05_celltype", args, conf)
@@ -382,23 +481,28 @@ def main():
         base_dir = os.path.dirname(os.path.abspath(__file__))
         import shutil
         
-        # 定义所有可用的配置模板映射 (源文件名: 目标建议名)
-        templates = {
-            "config_template.yaml":             "base_config.yaml",
-            "config_template_01_qc.yaml":       "01_scQC.yaml",
-            "config_template_02_filter.yaml":   "02_filter.yaml",
-            "config_template_03_cluster.yaml":  "03_cluster.yaml",
-            "config_template_04_subcluster.yaml":"04_subcluster.yaml",
-            "config_template_05_celltype.yaml": "05_celltype.yaml",
-            "config_template_07_diff.yaml":     "07_differential.yaml",
-            "config_template_06_merge_sub.yaml":"06_merge_sub.yaml",
-            "config_template_06_diff.yaml":     "07_differential.yaml"
-        }
+        template_sources = [
+            "config_template.yaml",
+            "config_template_01_qc.yaml",
+            "config_template_02_filter.yaml",
+            "config_template_03_cluster.yaml",
+            "config_template_04_subcluster.yaml",
+            "config_template_05_celltype.yaml",
+            "config_template_06_merge_sub.yaml",
+            "config_template_07_diff.yaml",
+            # 兼容旧模板文件名
+            "config_template_06_diff.yaml",
+        ]
         
         generated_files = []
-        for src, dest in templates.items():
+        seen_targets = set()
+        for src in template_sources:
             src_path = os.path.join(base_dir, src)
             if os.path.exists(src_path):
+                dest = canonical_template_target(src)
+                if dest in seen_targets:
+                    continue
+                seen_targets.add(dest)
                 # 如果用户通过 -n 指定了名字，则将主模板命名为该名字
                 target_name = args.name if (src == "config_template.yaml" and args.name != "base_config.yaml") else dest
                 
